@@ -97,34 +97,47 @@ const NavBar = () => {
 
             {/* Desktop Navigation */}
             <div className="hidden lg:flex items-center space-x-2">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const active = isActive(item.path);
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    className={`relative group flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 ${
-                      active
-                        ? 'bg-linear-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/50'
-                        : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
-                    }`}
-                  >
-                    <Icon className={`w-4 h-4 transition-transform duration-300 ${
-                      active ? '' : 'group-hover:scale-110'
-                    }`} />
-                    <span>{item.name}</span>
-                    {item.badge && (
-                      <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-linear-to-r from-pink-500 to-pink-600 rounded-full shadow-lg shadow-pink-500/50 animate-pulse">
-                        {item.badge}
-                      </span>
-                    )}
-                    {!active && (
-                      <div className="absolute inset-0 rounded-xl bg-linear-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
-                    )}
-                  </Link>
-                );
-              })}
+              {(() => {
+                const profileComplete = (userData?.profileCompletion ?? 0) >= 75;
+                return navItems.map((item) => {
+                  const Icon = item.icon;
+                  const active = isActive(item.path) && profileComplete;
+                  const disabled = !profileComplete;
+                  return (
+                    <button
+                      key={item.path}
+                      onClick={() => {
+                        if (disabled) {
+                          alert('Please complete your profile to access this.');
+                          navigate(userData?.role === 'mentor' ? '/profilementor' : '/profile');
+                          return;
+                        }
+                        navigate(item.path);
+                      }}
+                      className={`relative group flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 ${
+                        active
+                          ? 'bg-linear-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/50'
+                          : disabled
+                          ? 'opacity-50 cursor-not-allowed text-slate-400'
+                          : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                      }`}
+                    >
+                      <Icon className={`w-4 h-4 transition-transform duration-300 ${
+                        active ? '' : 'group-hover:scale-110'
+                      }`} />
+                      <span>{item.name}</span>
+                      {item.badge && (
+                        <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-linear-to-r from-pink-500 to-pink-600 rounded-full shadow-lg shadow-pink-500/50 animate-pulse">
+                          {item.badge}
+                        </span>
+                      )}
+                      {!active && !disabled && (
+                        <div className="absolute inset-0 rounded-xl bg-linear-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
+                      )}
+                    </button>
+                  );
+                });
+              })()}
             </div>
 
             {/* Right Section */}
@@ -194,14 +207,22 @@ const NavBar = () => {
                       </Link>}
                      
                       
-                      <Link
-                        to="/settings"
-                        onClick={() => setShowProfileDropdown(false)}
-                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-700/50 hover:text-white transition-all duration-200 group"
+                      {/* <button
+                        onClick={() => {
+                          setShowProfileDropdown(false);
+                          const profileComplete = (userData?.profileCompletion ?? 0) >= 75;
+                          if (!profileComplete) {
+                            alert('Please complete your profile to access Settings.');
+                            navigate(userData?.role === 'mentor' ? '/profilementor' : '/profile');
+                            return;
+                          }
+                          navigate('/settings');
+                        }}
+                        className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-700/50 hover:text-white transition-all duration-200 group"
                       >
                         <Settings className="w-5 h-5 group-hover:scale-110 transition-transform" />
                         <span className="font-medium">Settings</span>
-                      </Link>
+                      </button> */}
                       <div className="my-2 h-px bg-linear-to-r from-transparent via-purple-500/30 to-transparent"></div>
                       <button
                         onClick={handleLogout}
@@ -243,30 +264,43 @@ const NavBar = () => {
               </div>
 
               {/* Mobile Nav Items */}
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const active = isActive(item.path);
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={`relative flex items-center gap-3 px-4 py-4 rounded-xl font-medium transition-all duration-300 ${
-                      active
-                        ? 'bg-linear-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/50'
-                        : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
-                    }`}
-                  >
-                    <Icon className="w-5 h-5" />
-                    <span>{item.name}</span>
-                    {item.badge && (
-                      <span className="ml-auto flex items-center justify-center px-2 py-1 text-xs font-bold text-white bg-linear-to-r from-pink-500 to-pink-600 rounded-full shadow-lg shadow-pink-500/50">
-                        {item.badge}
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
+              {(() => {
+                const profileComplete = (userData?.profileCompletion ?? 0) >= 75;
+                return navItems.map((item) => {
+                  const Icon = item.icon;
+                  const active = isActive(item.path) && profileComplete;
+                  const disabled = !profileComplete;
+                  return (
+                    <button
+                      key={item.path}
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        if (!profileComplete) {
+                          alert('Please complete your profile to access this.');
+                          navigate(userData?.role === 'mentor' ? '/profilementor' : '/profile');
+                          return;
+                        }
+                        navigate(item.path);
+                      }}
+                      className={`relative flex items-center gap-3 px-4 py-4 rounded-xl font-medium transition-all duration-300 ${
+                        active
+                          ? 'bg-linear-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/50'
+                          : disabled
+                          ? 'text-slate-400 opacity-50 cursor-not-allowed'
+                          : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
+                      }`}
+                    >
+                      <Icon className="w-5 h-5" />
+                      <span>{item.name}</span>
+                      {item.badge && (
+                        <span className="ml-auto flex items-center justify-center px-2 py-1 text-xs font-bold text-white bg-linear-to-r from-pink-500 to-pink-600 rounded-full shadow-lg shadow-pink-500/50">
+                          {item.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                });
+              })()} 
 
               <div className="my-4 h-px bg-linear-to-r from-transparent via-purple-500/30 to-transparent"></div>
 

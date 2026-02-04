@@ -160,7 +160,15 @@ const updateStudentDetails = async (req, res) => {
       "portfolio",
       "careerGoal",
       "lookingFor",
-      "profileCompletion"
+      "profileCompletion",
+      "tagline",
+      "company",
+    "position",
+    "yearsOfExperience",
+    "teaching_style",
+    "achievements",
+    "mentorshipFocus"
+
     ];
 
     let parsedFormData = {};
@@ -205,13 +213,10 @@ const updateStudentDetails = async (req, res) => {
   }
 };
 
-module.exports = {
-  updateStudentDetails,
-};
 
 const getMentors=async (req,res)=>{
   try {
-    const mentors=await User.find({role:"mentor"})
+    const mentors=await User.find({role:"mentor",profileCompletion:{$gte:75}})
     if(!mentors){
       return res.status(400).json({message:"no mentors found"})
     }

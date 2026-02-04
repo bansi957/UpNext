@@ -57,11 +57,7 @@ const ProfilePageMentor = () => {
     certifications: [],
     mentorshipFocus: [],
     teaching_style: "",
-    hourlyRate: "",
-    sessionDuration: "60",
-    hoursPerMonth: "",
-    availability: [],
-    timezone: "",
+   
     linkedin: "",
     github: "",
     portfolio: "",
@@ -106,9 +102,6 @@ const ProfilePageMentor = () => {
     "Research & Publications"
   ];
 
-  const sessionDurations = [30, 45, 60, 90, 120];
-  const availableDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-  const timezones = ["IST (UTC +5:30)", "GMT (UTC +0:00)", "EST (UTC -5:00)", "PST (UTC -8:00)", "Other"];
 
   useEffect(() => {
     if (userData) {
@@ -128,11 +121,6 @@ const ProfilePageMentor = () => {
         certifications: userData.certifications || [],
         mentorshipFocus: userData.mentorshipFocus || [],
         teaching_style: userData.teaching_style || "",
-        hourlyRate: userData.hourlyRate || "",
-        sessionDuration: userData.sessionDuration || "60",
-        hoursPerMonth: userData.hoursPerMonth || "",
-        availability: userData.availability || [],
-        timezone: userData.timezone || "",
         linkedin: userData.linkedin || "",
         github: userData.github || "",
         portfolio: userData.portfolio || "",
@@ -163,7 +151,31 @@ const ProfilePageMentor = () => {
     setLoading(true);
 
     try {
+      // compute mentor completion and include in form data
+      const _mentorFields = [
+        formData.fullName,
+        formData.email,
+        formData.phone,
+        formData.bio,
+        formData.tagline,
+        formData.company,
+        formData.position,
+        formData.yearsOfExperience,
+        formData.domain,
+        (formData.skills || []).length > 0,
+        (formData.expertise || []).length > 0,
+        (formData.mentorshipFocus || []).length > 0,
+        formData.teaching_style,
+        formData.linkedin,
+        formData.github,
+        formData.portfolio,
+        formData.achievements
+      ];
+      const profileCompletion = Math.round(((_mentorFields.filter(Boolean).length / _mentorFields.length) * 100));
+
       const data = new FormData();
+      // attach the computed completion into the form data so backend updates it
+      formData["profileCompletion"] = profileCompletion;
       data.append("formData", JSON.stringify(formData));
 
       if (profileImage) {
@@ -171,7 +183,7 @@ const ProfilePageMentor = () => {
       }
 
       const response = await axios.post(
-        `${serverUrl}/api/mentor/updateprofile`,
+        `${serverUrl}/api/auth/updateprofile`,
         data,
         { withCredentials: true }
       );
@@ -185,7 +197,56 @@ const ProfilePageMentor = () => {
     } finally {
       setLoading(false);
     }
-  };
+  };  
+
+  // Mentor profile completion used in UI
+  const _mentorFields = [
+    formData.fullName,
+    formData.email,
+    formData.phone,
+    formData.bio,
+    formData.tagline,
+    formData.company,
+    formData.position,
+    formData.yearsOfExperience,
+    formData.domain,
+    (formData.skills || []).length > 0,
+    (formData.expertise || []).length > 0,
+    (formData.mentorshipFocus || []).length > 0,
+    formData.teaching_style,
+    formData.linkedin,
+    formData.github,
+    formData.portfolio,
+    formData.achievements
+  ];
+
+  const filledCount = _mentorFields.filter(Boolean).length;
+  const totalFields = _mentorFields.length;
+  const profileCompletion = Math.round(((filledCount / totalFields) * 100));
+
+  const mentorFieldDefs = [
+    { key: 'fullName', label: 'Full Name', value: formData.fullName },
+    { key: 'email', label: 'Email', value: formData.email },
+    { key: 'phone', label: 'Phone', value: formData.phone },
+    { key: 'bio', label: 'Bio', value: formData.bio },
+    { key: 'tagline', label: 'Tagline', value: formData.tagline },
+    { key: 'company', label: 'Company', value: formData.company },
+    { key: 'position', label: 'Position', value: formData.position },
+    { key: 'yearsOfExperience', label: 'Years of Experience', value: formData.yearsOfExperience },
+    { key: 'domain', label: 'Domain', value: formData.domain },
+    { key: 'skills', label: 'Skills', value: (formData.skills || []).length > 0 },
+    { key: 'expertise', label: 'Expertise', value: (formData.expertise || []).length > 0 },
+    { key: 'mentorshipFocus', label: 'Mentorship Focus', value: (formData.mentorshipFocus || []).length > 0 },
+    { key: 'teaching_style', label: 'Teaching Style', value: formData.teaching_style },
+    { key: 'linkedin', label: 'LinkedIn', value: formData.linkedin },
+    { key: 'github', label: 'GitHub', value: formData.github },
+    { key: 'portfolio', label: 'Portfolio', value: formData.portfolio },
+    { key: 'achievements', label: 'Achievements', value: formData.achievements }
+  ];
+
+  const missingFields = mentorFieldDefs.filter(f => !f.value).map(f => f.label);
+  const neededToReach75 = Math.max(0, Math.ceil(0.75 * totalFields) - filledCount);
+  const suggestedFields = missingFields.slice(0, neededToReach75);
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -754,6 +815,53 @@ const ProfilePageMentor = () => {
                 </div>
               )}
             </form>
+
+            {/* Profile Completion Indicator */}
+            <div className="mt-8 bg-slate-800/40 backdrop-blur-2xl rounded-2xl shadow-2xl border border-purple-500/20 p-6 animate-slide-up">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <Sparkles className="w-5 h-5 text-green-400" />
+                  <h3 className="font-bold text-white">Profile Completion</h3>
+                </div>
+                <span className="text-3xl font-black bg-linear-to-r from-green-400 to-teal-400 bg-clip-text text-transparent">
+                  {profileCompletion}%
+                </span>
+              </div>
+              <div className="w-full h-3 bg-slate-700/50 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-linear-to-r from-green-600 via-teal-500 to-green-600 transition-all duration-500 rounded-full animate-linear-x"
+                  style={{ width: `${profileCompletion}%` }}
+                />
+              </div>
+              <p className="text-sm text-slate-400 mt-3">
+                {profileCompletion === 100
+                  ? "🎉 Your mentor profile is complete!"
+                  : `Complete your profile to start accepting mentorship requests`}
+              </p>
+
+              {missingFields.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm text-slate-300 mb-2">Fields to complete ({missingFields.length}):</p>
+                  <div className="flex flex-wrap gap-2">
+                    {missingFields.map((m) => (
+                      <span key={m} className="px-3 py-1 text-xs bg-slate-700/40 text-yellow-300 rounded-md border border-yellow-500/20">
+                        {m}
+                      </span>
+                    ))}
+                  </div>
+
+                  {suggestedFields.length > 0 && (
+                    <p className="text-sm text-slate-400 mt-3">Suggested to reach 75%: <strong className="text-white">{suggestedFields.join(', ')}</strong></p>
+                  )}
+
+                  <div className="mt-3 flex items-center gap-3">
+                    <button onClick={() => { setIsEditing(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="px-4 py-2 rounded-lg bg-yellow-500 text-white font-medium">Edit Profile</button>
+                  </div>
+                </div>
+              )}
+
+            </div>
+
           </div>
         </div>
 

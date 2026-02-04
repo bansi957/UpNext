@@ -126,6 +126,52 @@ function StudentHome() {
     return () => clearInterval(interval);
   }, []);
 
+  // If user exists and profile completion is below threshold, show minimal view only
+  const incomplete = userData && (userData.profileCompletion ?? 0) < 75;
+  if (incomplete) {
+    return (
+      <>
+        <NavBar />
+        <div className="min-h-screen bg-linear-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+          <div className="relative pt-28 pb-20 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto">
+              <div className="text-center mb-16 animate-fade-in">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 backdrop-blur-xl border border-purple-500/20 mb-6 animate-slide-down">
+                  <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" />
+                  <span className="text-purple-300 text-sm font-medium">Welcome to UpNext</span>
+                </div>
+
+                <h1 className="text-5xl md:text-7xl font-black text-white mb-4 animate-slide-up tracking-tight">
+                  <span className="bg-linear-to-r from-purple-400 via-pink-400 to-purple-400 text-transparent bg-clip-text animate-gradient-x">
+                    {greeting},
+                  </span>
+                  <br />
+                  <span className="text-white">{userData?.fullName || 'Student'}!</span>
+                </h1>
+
+                <p className="text-xl text-slate-300 max-w-2xl mx-auto mb-12 animate-slide-up-delayed leading-relaxed">
+                  Please complete your profile to access the full app features.
+                </p>
+
+                <div className="max-w-2xl mx-auto mt-6">
+                  <div className="flex items-center justify-between gap-4 bg-orange-500/10 border border-orange-500/20 text-orange-300 px-4 py-3 rounded-xl">
+                    <div>
+                      <strong>Complete your profile to ask questions</strong>
+                      <div className="text-slate-400 text-sm">Add your education, skills and bio to get better mentor matches</div>
+                    </div>
+                    <div>
+                      <button onClick={() => navigate('/profile')} className="px-4 py-2 rounded-lg bg-orange-500 text-white font-medium">Complete Profile</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <NavBar />
@@ -181,7 +227,13 @@ function StudentHome() {
 
               {/* Primary CTA */}
               <button 
-                onClick={() => navigate('/user/ask-question')}
+                onClick={() => {
+                  if (userData?.profileCompletion === 100) navigate('/user/ask-question');
+                  else {
+                    alert('Please complete your profile to ask questions');
+                    navigate('/profile');
+                  }
+                }}
                 className="group relative inline-flex items-center gap-3 px-8 py-4 bg-linear-to-r from-purple-600 to-pink-600 text-white font-bold text-lg rounded-2xl shadow-2xl shadow-purple-500/50 hover:shadow-purple-500/80 transition-all duration-300 hover:scale-105 animate-bounce-slow overflow-hidden"
               >
                 <div className="absolute inset-0 bg-linear-to-r from-pink-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -189,6 +241,21 @@ function StudentHome() {
                 <span className="relative z-10">Ask Your Question Now</span>
                 <ArrowRight className="w-6 h-6 relative z-10 group-hover:translate-x-2 transition-transform" />
               </button>
+
+              {/* Complete profile banner */}
+              {userData?.profileCompletion < 75 && (
+                <div className="max-w-2xl mx-auto mt-6">
+                  <div className="flex items-center justify-between gap-4 bg-orange-500/10 border border-orange-500/20 text-orange-300 px-4 py-3 rounded-xl">
+                    <div>
+                      <strong>Complete your profile to ask questions</strong>
+                      <div className="text-slate-400 text-sm">Add your education, skills and bio to get better mentor matches</div>
+                    </div>
+                    <div>
+                      <button onClick={() => navigate('/profile')} className="px-4 py-2 rounded-lg bg-orange-500 text-white font-medium">Complete Profile</button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Stats Cards */}

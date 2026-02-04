@@ -98,8 +98,18 @@ const userSchema=mongoose.Schema({
     },
     company:String,
     position:String,
-    experience:Number,
-    teachingStyle:String
+    yearsOfExperience:Number,
+    teaching_style:String,
+    achievements:String,
+    mentorshipFocus:[String],
+    rating:{
+      type:Number,
+      default:0
+    },
+     studentsHelped:{
+      type:Number,
+      default:0
+    }
 
 
 }, { timestamps: true })

@@ -23,121 +23,11 @@ import NavBar from '../components/NavBar';
 function Mentors() {
   const navigate = useNavigate();
   const { userData } = useSelector(state => state.user);
-  const [mentors, setMentors] = useState([]);
+  const [mentorsData, setMentorsData] = useState([]);
   const [filteredMentors, setFilteredMentors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDomain, setSelectedDomain] = useState('all');
-  const [sendingRequestTo, setSendingRequestTo] = useState(null);
-  const [sentRequests, setSentRequests] = useState({});
-
-  // Sample mentor data - Replace with API call
-  const mockMentors = [
-    {
-      _id: '1',
-      fullName: 'Priya Sharma',
-      domain: 'Web Development',
-      tagline: 'Full-stack developer | React & Node.js expert',
-      profileImage: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Priya',
-      bio: 'Senior developer with 5+ years of experience in web development',
-      company: 'Google',
-      experience: '5+ years',
-      rating: 4.8,
-      studentsHelped: 156,
-      skills: ['React', 'Node.js', 'PostgreSQL', 'AWS']
-    },
-    {
-      _id: '2',
-      fullName: 'Vikram Patel',
-      domain: 'Machine Learning',
-      tagline: 'ML Engineer | TensorFlow & PyTorch specialist',
-      profileImage: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Vikram',
-      bio: 'ML researcher and engineer working on AI solutions',
-      company: 'Microsoft',
-      experience: '4+ years',
-      rating: 4.9,
-      studentsHelped: 203,
-      skills: ['Python', 'TensorFlow', 'PyTorch', 'NLP']
-    },
-    {
-      _id: '3',
-      fullName: 'Anjali Singh',
-      domain: 'Data Science',
-      tagline: 'Data Scientist | Big Data & Analytics',
-      profileImage: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Anjali',
-      bio: 'Data scientist passionate about transforming data into insights',
-      company: 'Amazon',
-      experience: '6+ years',
-      rating: 4.7,
-      studentsHelped: 189,
-      skills: ['Python', 'SQL', 'Tableau', 'Big Data']
-    },
-    {
-      _id: '4',
-      fullName: 'Rajesh Kumar',
-      domain: 'Web Development',
-      tagline: 'Full-stack expert | Building scalable applications',
-      profileImage: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Rajesh',
-      bio: 'Architect of large-scale web applications',
-      company: 'Meta',
-      experience: '7+ years',
-      rating: 4.8,
-      studentsHelped: 245,
-      skills: ['React', 'Vue.js', 'Node.js', 'Kubernetes']
-    },
-    {
-      _id: '5',
-      fullName: 'Neha Verma',
-      domain: 'Cloud Computing',
-      tagline: 'Cloud Architect | AWS & Azure expert',
-      profileImage: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Neha',
-      bio: 'Cloud infrastructure specialist and DevOps enthusiast',
-      company: 'IBM',
-      experience: '5+ years',
-      rating: 4.6,
-      studentsHelped: 167,
-      skills: ['AWS', 'Azure', 'Kubernetes', 'Docker']
-    },
-    {
-      _id: '6',
-      fullName: 'Arjun Desai',
-      domain: 'Mobile App Development',
-      tagline: 'Mobile Developer | React Native & Flutter',
-      profileImage: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Arjun',
-      bio: 'Cross-platform mobile app developer',
-      company: 'Apple',
-      experience: '4+ years',
-      rating: 4.9,
-      studentsHelped: 178,
-      skills: ['React Native', 'Flutter', 'Swift', 'Kotlin']
-    },
-    {
-      _id: '7',
-      fullName: 'Deepika Roy',
-      domain: 'Cybersecurity',
-      tagline: 'Security Expert | Ethical Hacking & Penetration Testing',
-      profileImage: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Deepika',
-      bio: 'Cybersecurity specialist focused on application security',
-      company: 'Cisco',
-      experience: '6+ years',
-      rating: 4.7,
-      studentsHelped: 142,
-      skills: ['Ethical Hacking', 'Penetration Testing', 'SSL/TLS', 'OWASP']
-    },
-    {
-      _id: '8',
-      fullName: 'Sanjay Malhotra',
-      domain: 'DevOps',
-      tagline: 'DevOps Engineer | CI/CD Pipeline expert',
-      profileImage: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sanjay',
-      bio: 'Automation and infrastructure expert',
-      company: 'Netflix',
-      experience: '5+ years',
-      rating: 4.8,
-      studentsHelped: 156,
-      skills: ['Docker', 'Kubernetes', 'Jenkins', 'GitLab CI']
-    }
-  ];
 
   const domains = [
     'all',
@@ -149,19 +39,45 @@ function Mentors() {
     'Cybersecurity',
     'DevOps'
   ];
-
-  // Load mentors
-  useEffect(() => {
-    setLoading(true);
-    // Replace with actual API call
-    setMentors(mockMentors);
-    setFilteredMentors(mockMentors);
+  const {mentors}=useSelector(state=>state.user)
+  
+  const handleAskQuestion = (mentorId) => {
+    // Redirect to ask question page with mentor ID in state
+    navigate('/user/ask-question', { state: { targetMentorId: mentorId, questionType: 'specific' } });
+  };
+ useEffect(() => {
+  if (!mentors || mentors.length === 0) {
     setLoading(false);
-  }, []);
+    return;
+  }
+
+  const normalized = mentors.map(m => ({
+    _id: m._id,
+    fullName: m.fullName,
+    domain: m.domain || "General",
+    bio: m.bio || "",
+    company: m.company || "Independent",
+    experience: m.experience || `${m.yearsOfExperience || 0}+ years`,
+    profileImage:
+      m.profileImage ||
+      "https://api.dicebear.com/7.x/avataaars/svg?seed=" + m.fullName,
+    tagline: m.tagline || m.position || "Industry Mentor",
+    skills: m.skills || [],
+
+    // 🔥 REQUIRED for UI
+    rating: m.rating ?? 4.7,
+    studentsHelped: m.studentsHelped ?? 120
+  }));
+
+  setMentorsData(normalized);
+  setFilteredMentors(normalized);
+  setLoading(false);
+}, [mentors]);
+
 
   // Filter mentors based on search and domain
   useEffect(() => {
-    let filtered = mentors;
+    let filtered =[...mentorsData];
 
     // Filter by domain
     if (selectedDomain !== 'all') {
@@ -186,7 +102,7 @@ function Mentors() {
     });
 
     setFilteredMentors(filtered);
-  }, [searchQuery, selectedDomain, mentors, userData?.domain]);
+  }, [searchQuery, selectedDomain, mentorsData , userData?.domain]);
 
   const handleSendRequest = async (mentorId) => {
     setSendingRequestTo(mentorId);
@@ -339,7 +255,6 @@ function Mentors() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredMentors.map((mentor, index) => {
                 const isSameDomain = mentor.domain === userData?.domain;
-                const isRequested = sentRequests[mentor._id];
 
                 return (
                   <div
@@ -426,36 +341,14 @@ function Mentors() {
                       {/* Action Buttons */}
                       <div className="space-y-3">
                         <button
-                          onClick={() => handleSendRequest(mentor._id)}
-                          disabled={isRequested || sendingRequestTo === mentor._id}
-                          className={`w-full py-3 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 ${
-                            isRequested
-                              ? 'bg-green-500/20 text-green-300 border border-green-500/30 cursor-not-allowed'
-                              : sendingRequestTo === mentor._id
-                              ? 'bg-slate-700/50 text-slate-300 opacity-60'
-                              : 'bg-linear-to-r from-purple-600 to-pink-600 text-white hover:shadow-lg hover:shadow-purple-500/30 hover:scale-105 active:scale-95'
-                          }`}
+                          onClick={() => handleAskQuestion(mentor._id)}
+                          className="w-full py-3 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 bg-linear-to-r from-purple-600 to-pink-600 text-white hover:shadow-lg hover:shadow-purple-500/30 hover:scale-105 active:scale-95"
                         >
-                          {isRequested ? (
-                            <>
-                              <Send className="w-4 h-4" />
-                              Request Sent
-                            </>
-                          ) : sendingRequestTo === mentor._id ? (
-                            <>
-                              <div className="w-4 h-4 border-2 border-slate-400 border-t-white rounded-full animate-spin" />
-                              Sending...
-                            </>
-                          ) : (
-                            <>
-                              <Send className="w-4 h-4" />
-                              Send Request
-                            </>
-                          )}
+                          <MessageCircle className="w-4 h-4" />
+                          Ask Question
                         </button>
 
-                        <button onClick={()=>navigate("/mentor/profile")} className="w-full py-3 rounded-xl font-bold border-2 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 transition-all duration-300 flex items-center justify-center gap-2 group">
-                          <MessageCircle className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                        <button onClick={() => navigate(`/mentor/${mentor._id}`)} className="w-full py-3 rounded-xl font-bold border-2 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 transition-all duration-300 flex items-center justify-center gap-2 group">
                           View Profile
                         </button>
                       </div>

@@ -207,16 +207,31 @@ const ProfilePage = () => {
     if (file) setProfileImage(file);
   };
 
-  const profileCompletion = Math.round(
-    (((formData.fullName ? 1 : 0) +
-      (formData.email ? 1 : 0) +
-      (formData.college ? 1 : 0) +
-      (formData.branch ? 1 : 0) +
-      (formData.year ? 1 : 0) +
-      (formData.domain ? 1 : 0) +
-      (formData.skills.length > 0 ? 1 : 0) +
-      (formData.bio ? 1 : 0)) / 8) * 100
-  );
+  // Accurate profile completion: count filled fields from a list and compute percentage
+  const studentFieldDefs = [
+    { key: 'fullName', label: 'Full Name', value: formData.fullName },
+    { key: 'email', label: 'Email', value: formData.email },
+    { key: 'college', label: 'College', value: formData.college },
+    { key: 'branch', label: 'Branch', value: formData.branch },
+    { key: 'year', label: 'Year', value: formData.year },
+    { key: 'domain', label: 'Domain', value: formData.domain },
+    { key: 'skills', label: 'Skills', value: (formData.skills || []).length > 0 },
+    { key: 'bio', label: 'Bio', value: formData.bio },
+    { key: 'github', label: 'GitHub', value: formData.github },
+    { key: 'linkedin', label: 'LinkedIn', value: formData.linkedin },
+    { key: 'portfolio', label: 'Portfolio', value: formData.portfolio },
+    { key: 'careerGoal', label: 'Career Goal', value: formData.careerGoal },
+    { key: 'lookingFor', label: 'Looking For', value: (formData.lookingFor || []).length > 0 }
+  ];
+
+  const filledCount = studentFieldDefs.filter(f => Boolean(f.value)).length;
+  const totalFields = studentFieldDefs.length;
+  const profileCompletion = Math.round(((filledCount / totalFields) * 100));
+
+  // fields that are missing
+  const missingFields = studentFieldDefs.filter(f => !f.value).map(f => f.label);
+  const neededToReach75 = Math.max(0, Math.ceil(0.75 * totalFields) - filledCount);
+  const suggestedFields = missingFields.slice(0, neededToReach75);
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-900 via-purple-900 to-slate-900 pt-12 pb-12 px-4 relative overflow-hidden">
@@ -774,6 +789,28 @@ const ProfilePage = () => {
               ? "🎉 Your profile is complete!" 
               : `Complete your profile to get better mentor matches`}
           </p>
+
+          {missingFields.length > 0 && (
+            <div className="mt-4">
+              <p className="text-sm text-slate-300 mb-2">Fields to complete ({missingFields.length}):</p>
+              <div className="flex flex-wrap gap-2">
+                {missingFields.map((m) => (
+                  <span key={m} className="px-3 py-1 text-xs bg-slate-700/40 text-orange-300 rounded-md border border-orange-500/20">
+                    {m}
+                  </span>
+                ))}
+              </div>
+
+              {suggestedFields.length > 0 && (
+                <p className="text-sm text-slate-400 mt-3">Suggested to reach 75%: <strong className="text-white">{suggestedFields.join(', ')}</strong></p>
+              )}
+
+              <div className="mt-3 flex items-center gap-3">
+                <button onClick={() => { setIsEditing(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="px-4 py-2 rounded-lg bg-orange-500 text-white font-medium">Edit Profile</button>
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
 

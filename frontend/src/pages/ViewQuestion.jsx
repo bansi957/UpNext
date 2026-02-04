@@ -22,7 +22,28 @@ function ViewQuestion() {
   const { id } = useParams();
   const { userData } = useSelector(state => state.user);
   const [question, setQuestion] = useState(null);
- const dispatch=useDispatch()
+  const [acceptingRequest, setAcceptingRequest] = useState(false);
+  const dispatch = useDispatch();
+
+  const handleAcceptRequest = async (questionId) => {
+    setAcceptingRequest(true);
+    try {
+      await axios.post(
+        `${serverUrl}/api/questions/${questionId}/accept`,
+        {},
+        { withCredentials: true }
+      );
+      alert("Question accepted! You can now respond.");
+      // Optionally refresh the question data
+      const result = await axios.get(`${serverUrl}/api/questions/${questionId}`, { withCredentials: true });
+      setQuestion(result.data);
+    } catch (error) {
+      console.error("Error accepting question:", error);
+      alert("Failed to accept question");
+    } finally {
+      setAcceptingRequest(false);
+    }
+  };
 
   const handleDeleteQuestion = async (questionId) => {
     try {
@@ -90,28 +111,28 @@ function ViewQuestion() {
                 <span className="text-purple-300 text-sm font-medium">Question Details</span>
               </div>
 
-              <h1 className="text-5xl md:text-6xl font-black text-white mb-4 tracking-tight">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white mb-4 tracking-tight">
                 <span className="bg-linear-to-r from-purple-400 via-pink-400 to-purple-400 text-transparent bg-clip-text animate-gradient-x">
                   View Question
                 </span>
               </h1>
 
-              <p className="text-xl text-slate-300 max-w-2xl mx-auto mb-2">
+              <p className="text-xs sm:text-sm md:text-base lg:text-lg text-slate-300 max-w-2xl mx-auto mb-2">
                 Read the details, see attachments and manage your question
               </p>
             </div>
           </div>
 
-          <div className="bg-slate-800/40 backdrop-blur-2xl rounded-3xl shadow-2xl border border-purple-500/20 overflow-hidden animate-fade-in p-8 md:p-10">
+          <div className="bg-slate-800/40 backdrop-blur-2xl rounded-3xl shadow-2xl border border-purple-500/20 overflow-hidden animate-fade-in p-4 sm:p-6 md:p-8 lg:p-10">
             {!question ? (
               <div className="text-center py-20">
                 <p className="text-slate-400">Question not found or still loading...</p>
               </div>
             ) : (
               <div className="space-y-6">
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                   <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-full bg-slate-900/60 flex items-center justify-center overflow-hidden border border-slate-700">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full bg-slate-900/60 flex items-center justify-center overflow-hidden border border-slate-700 shrink-0">
                       {question?.author?.profileImage ? (
                         <img src={question.author.profileImage} alt="author" className="w-full h-full object-cover" />
                       ) : (
@@ -120,93 +141,115 @@ function ViewQuestion() {
                     </div>
 
                     <div>
-                      <h3 className="text-lg font-bold text-white">{question.author?.fullName || 'Unknown'}</h3>
-                      <p className="text-sm text-slate-400">{formatDate(question.createdAt)}</p>
+                      <h3 className="text-sm sm:text-base md:text-lg font-bold text-white">{question.author?.fullName || 'Unknown'}</h3>
+                      <p className="text-xs sm:text-sm text-slate-400">{formatDate(question.createdAt)}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <span className="px-3 py-1 rounded-full text-sm font-medium bg-slate-900/40 border border-purple-500/20 text-purple-300">{question.category}</span>
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${question.responses && question.responses.length > 0 ? 'bg-linear-to-r from-green-500 to-emerald-500 text-white' : 'bg-yellow-700/10 text-yellow-300 border border-yellow-500/20'}`}>
-                      {question.responses && question.responses.length > 0 ? 'Answered' : 'Waiting'}
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                    <span className="px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-slate-900/40 border border-purple-500/20 text-purple-300">{question.category}</span>
+                    <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${question.status === 'accepted' ? 'bg-linear-to-r from-green-500 to-emerald-500 text-white' : 'bg-yellow-700/10 text-yellow-300 border border-yellow-500/20'}`}>
+                      {question.status === 'accepted' ? 'Accepted' : 'Pending'}
+                    </span>
+                    <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold ${
+                      question.questionType === 'specific' 
+                        ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' 
+                        : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                    }`}>
+                      {question.questionType === 'specific' ? '👤 Specific Mentor' : '👥 Open to All'}
                     </span>
                   </div>
                 </div>
 
                 <div>
-                  <h2 className="text-3xl md:text-4xl font-black text-white mb-3">{question.title}</h2>
+                  <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-white mb-3">{question.title}</h2>
                   <div className="flex flex-wrap gap-2 mb-4">
                     {(question.tags || []).map(tag => (
-                      <span key={tag} className="text-xs px-3 py-1 rounded-lg bg-slate-900/50 border border-slate-700 text-slate-300">{tag}</span>
+                      <span key={tag} className="text-xs px-2 sm:px-3 py-1 rounded-lg bg-slate-900/50 border border-slate-700 text-slate-300">{tag}</span>
                     ))}
                   </div>
 
-                  <p className="text-slate-300 leading-relaxed whitespace-pre-line">{question.description}</p>
+                  <p className="text-xs sm:text-sm md:text-base text-slate-300 leading-relaxed whitespace-pre-line">{question.description}</p>
                 </div>
 
                 {question.attachment && (
                   <div className="rounded-2xl overflow-hidden border-2 border-purple-500/40 bg-slate-900/30">
-                    <img src={question.attachment} alt="attachment" className="w-full object-cover max-h-96" />
+                    <img src={question.attachment} alt="attachment" className="w-full object-cover max-h-64 sm:max-h-80 md:max-h-96" />
                   </div>
                 )}
 
-                <div className="flex items-center justify-between mt-6">
-                  <div className="flex items-center gap-4 text-sm text-slate-400">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-green-400" />
-                      <span>{question.responses ? question.responses.length : 0} responses</span>
+                {question.questionType === 'specific' && question.targetMentor && (
+                  <div className="rounded-2xl border-2 border-blue-500/40 bg-blue-500/10 p-4 sm:p-6">
+                    <p className="text-xs sm:text-sm text-blue-300 font-semibold mb-4 flex items-center gap-2">
+                      <span>👤 This question was sent specifically to:</span>
+                    </p>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-900/60 flex items-center justify-center overflow-hidden border border-slate-700 shrink-0">
+                        {question.targetMentor?.profileImage ? (
+                          <img src={question.targetMentor.profileImage} alt="mentor" className="w-full h-full object-cover" />
+                        ) : (
+                          <User className="w-5 sm:w-6 h-5 sm:h-6 text-slate-400" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="text-sm sm:text-base md:text-lg font-bold text-white truncate">{question.targetMentor?.fullName}</h4>
+                        <p className="text-xs sm:text-sm text-slate-400 truncate">{question.targetMentor?.domain || question.targetMentor?.position}</p>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-yellow-400" />
-                      <span>{formatDate(question.createdAt)}</span>
+                  </div>
+                )}
+
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6">
+                  <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-slate-400">
+                      <div className="flex items-center gap-1 sm:gap-2">
+                      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 shrink-0" />
+                      <span className="text-xs sm:text-sm">{question.responses ? question.responses.length : 0} responses</span>
+                    </div>
+                    <div className="flex items-center gap-1 sm:gap-2">
+                      <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400 shrink-0" />
+                      <span className="text-xs sm:text-sm">{formatDate(question.createdAt)}</span>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    {userData && userData._id === question.author?._id && (
-                      <>
-                        <button onClick={() => navigate(`/question/${question._id}/edit`)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-linear-to-r from-purple-600 to-pink-600 text-white font-medium shadow-2xl shadow-purple-500/50 hover:scale-105 transition-all">
-                          <Edit className="w-4 h-4" />
-                          <span>Edit</span>
-                        </button>
-                        <button onClick={()=>handleDeleteQuestion(id)} className="px-3 py-2 rounded-xl bg-red-600/80 text-white font-medium hover:bg-red-700 transition-all">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </>
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    {userData?.role === 'mentor' ? (
+                      <button
+                        onClick={() => handleAcceptRequest(question._id)}
+                        disabled={acceptingRequest || question.status === 'accepted'}
+                        className="flex items-center justify-center sm:justify-start gap-2 px-4 py-2 rounded-xl bg-linear-to-r from-green-600 to-emerald-600 text-white font-medium text-sm shadow-2xl shadow-green-500/50 hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <CheckCircle className="w-4 h-4 shrink-0" />
+                        <span>{acceptingRequest ? 'Accepting...' : question.status === 'accepted' ? 'Already Accepted' : 'Accept Request'}</span>
+                      </button>
+                    ) : (
+                      userData && userData._id === question.author?._id && (
+                        <>
+                          {question.status !== 'accepted' && (
+                            <button onClick={() => navigate(`/question/${question._id}/edit`)} className="flex items-center justify-center sm:justify-start gap-2 px-4 py-2 rounded-xl bg-linear-to-r from-purple-600 to-pink-600 text-white font-medium text-sm shadow-2xl shadow-purple-500/50 hover:scale-105 transition-all">
+                              <Edit className="w-4 h-4 shrink-0" />
+                              <span>Edit</span>
+                            </button>
+                          )}
+                          <button onClick={()=>handleDeleteQuestion(id)} className="flex items-center justify-center px-4 py-2 rounded-xl bg-red-600/80 text-white font-medium text-sm hover:bg-red-700 transition-all">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )
                     )}
                   </div>
                 </div>
 
-                <div className="mt-8">
-                  <h4 className="text-lg font-bold text-white mb-4">Responses</h4>
-                  {question.responses && question.responses.length > 0 ? (
-                    <div className="space-y-4">
-                      {question.responses.map((res) => (
-                        <div key={res._id || res.id} className="bg-slate-900/40 border border-slate-700 rounded-2xl p-4">
-                          <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 rounded-full bg-slate-800/60 flex items-center justify-center overflow-hidden">
-                              {res.author?.profileImage ? (
-                                <img src={res.author.profileImage} alt="res-author" className="w-full h-full object-cover" />
-                              ) : (
-                                <User className="w-5 h-5 text-slate-400" />
-                              )}
-                            </div>
-
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <h5 className="text-sm font-semibold text-white">{res.author?.fullName || 'Mentor'}</h5>
-                                <span className="text-xs text-slate-400">{formatDate(res.createdAt)}</span>
-                              </div>
-                              <p className="text-slate-300 text-sm leading-relaxed">{res.text}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="p-6 rounded-2xl bg-slate-900/30 border border-slate-700 text-slate-400">No responses yet. Be the first to respond!</div>
-                  )}
-                </div>
+                {question.status === 'accepted' && (
+                  <div className="mt-8">
+                    <button
+                      onClick={() => navigate(userData?.role === 'mentor' ? '/mentor/chats' : '/user/messages')}
+                      className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-xl bg-linear-to-r from-blue-600 to-cyan-600 text-white font-medium text-sm sm:text-base shadow-2xl shadow-blue-500/50 hover:scale-105 transition-all w-full sm:w-auto"
+                    >
+                      <CheckCircle className="w-4 sm:w-5 h-4 sm:h-5 shrink-0" />
+                      <span>Go to Chat</span>
+                    </button>
+                  </div>
+                )}
 
               </div>
             )}

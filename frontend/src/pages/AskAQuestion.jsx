@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   ArrowLeft,
   Upload,
@@ -19,6 +19,7 @@ import { addQuestion} from '../Redux/userSlice';
 
 function AskAQuestion() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { userData } = useSelector(state => state.user);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -30,8 +31,12 @@ function AskAQuestion() {
     title: '',
     description: '',
     category: '',
-    tags: []
+    tags: [],
+    questionType: location.state?.questionType || 'all', // 'all' for all mentors, 'specific' for one mentor
+    targetMentorId: location.state?.targetMentorId || '' // only used when questionType is 'specific'
   });
+  const [mentorsList, setMentorsList] = useState([]);
+  const mentors = useSelector(state => state.user.mentors || []);
 
   const categories = [
     'Career Guidance',
@@ -66,6 +71,12 @@ function AskAQuestion() {
     setFormData(prev => ({ ...prev, [name]: value }));
     setError('');
   };
+
+  useEffect(() => {
+    if (Array.isArray(mentors)) {
+      setMentorsList(mentors);
+    }
+  }, [mentors]);
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -122,6 +133,10 @@ const dispatch=useDispatch()
       setError('Please select a category');
       return;
     }
+    if (formData.questionType === 'specific' && !formData.targetMentorId) {
+      setError('Please select a mentor for this question');
+      return;
+    }
 
     setLoading(true);
 
@@ -131,6 +146,10 @@ const dispatch=useDispatch()
       data.append('description', formData.description);
       data.append('category', formData.category);
       data.append('tags', formData.tags);
+      data.append('questionType', formData.questionType);
+      if (formData.questionType === 'specific') {
+        data.append('targetMentorId', formData.targetMentorId);
+      }
       if (imageFile) {
         data.append('image', imageFile);
       }
@@ -142,7 +161,7 @@ const dispatch=useDispatch()
       );
 
       setSuccess(true);
-      setFormData({ title: '', description: '', category: '', tags: [] });
+      setFormData({ title: '', description: '', category: '', tags: [], questionType: 'all', targetMentorId: '' });
       setImagePreview(null);
       setImageFile(null);
       dispatch(addQuestion(response.data.question))
@@ -220,9 +239,93 @@ const dispatch=useDispatch()
             
             <form onSubmit={handleSubmit} className="space-y-8">
               
+              {/* Question Type */}
+              <div className="animate-slide-up" style={{ animationDelay: '50ms' }}>
+                <label className="text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-orange-400" />
+                  Question Type <span className="text-pink-400">*</span>
+                </label>
+                <div className="grid grid-cols-2 gap-4">
+                  <label className={`relative cursor-pointer p-4 rounded-xl border-2 transition-all duration-300 ${
+                    formData.questionType === 'all'
+                      ? 'bg-purple-500/20 border-purple-500'
+                      : 'bg-slate-800/50 border-slate-700 hover:border-slate-600'
+                  }`}>
+                    <input
+                      type="radio"
+                      name="questionType"
+                      value="all"
+                      checked={formData.questionType === 'all'}
+                      onChange={handleInputChange}
+                      className="sr-only"
+                    />
+                    <div className="flex items-center gap-2">
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                        formData.questionType === 'all' ? 'border-purple-500 bg-purple-500' : 'border-slate-500'
+                      }`}>
+                        {formData.questionType === 'all' && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-white text-sm">Open to All Mentors</p>
+                        <p className="text-xs text-slate-400">All mentors can see & respond</p>
+                      </div>
+                    </div>
+                  </label>
+
+                  <label className={`relative cursor-pointer p-4 rounded-xl border-2 transition-all duration-300 ${
+                    formData.questionType === 'specific'
+                      ? 'bg-blue-500/20 border-blue-500'
+                      : 'bg-slate-800/50 border-slate-700 hover:border-slate-600'
+                  }`}>
+                    <input
+                      type="radio"
+                      name="questionType"
+                      value="specific"
+                      checked={formData.questionType === 'specific'}
+                      onChange={handleInputChange}
+                      className="sr-only"
+                    />
+                    <div className="flex items-center gap-2">
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                        formData.questionType === 'specific' ? 'border-blue-500 bg-blue-500' : 'border-slate-500'
+                      }`}>
+                        {formData.questionType === 'specific' && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-white text-sm">Send to Specific Mentor</p>
+                        <p className="text-xs text-slate-400">Only one mentor can respond</p>
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Select Mentor (only if specific) */}
+              {formData.questionType === 'specific' && (
+                <div className="animate-slide-up" style={{ animationDelay: '75ms' }}>
+                  <label className="text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-blue-400" />
+                    Select Mentor <span className="text-pink-400">*</span>
+                  </label>
+                  <select
+                    name="targetMentorId"
+                    value={formData.targetMentorId}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-4 rounded-xl border-2 border-slate-700 bg-slate-800/50 backdrop-blur-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300 text-white"
+                  >
+                    <option value="">Choose a mentor...</option>
+                    {mentorsList.map(mentor => (
+                      <option key={mentor._id} value={mentor._id}>
+                        {mentor.fullName} - {mentor.domain}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               {/* Question Title */}
               <div className="animate-slide-up">
-                <label className="block text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
+                <label className="text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
                   <FileText className="w-5 h-5 text-purple-400" />
                   Question Title <span className="text-pink-400">*</span>
                 </label>
@@ -246,7 +349,7 @@ const dispatch=useDispatch()
 
               {/* Category */}
               <div className="animate-slide-up" style={{ animationDelay: '100ms' }}>
-                <label className="block text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
+                <label className="text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-blue-400" />
                   Category <span className="text-pink-400">*</span>
                 </label>
@@ -266,7 +369,7 @@ const dispatch=useDispatch()
 
               {/* Description */}
               <div className="animate-slide-up" style={{ animationDelay: '200ms' }}>
-                <label className="block text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
+                <label className="text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
                   <FileText className="w-5 h-5 text-pink-400" />
                   Description <span className="text-pink-400">*</span>
                 </label>
@@ -290,7 +393,7 @@ const dispatch=useDispatch()
 
               {/* Tags */}
               <div className="animate-slide-up" style={{ animationDelay: '300ms' }}>
-                <label className="block text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
+                <label className="text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-cyan-400" />
                   Tags (Optional)
                 </label>
@@ -314,7 +417,7 @@ const dispatch=useDispatch()
 
               {/* Image Upload */}
               <div className="animate-slide-up" style={{ animationDelay: '400ms' }}>
-                <label className="block text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
+                <label className="text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
                   <ImageIcon className="w-5 h-5 text-green-400" />
                   Attach Screenshot/Image (Optional)
                 </label>

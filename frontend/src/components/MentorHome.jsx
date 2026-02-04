@@ -45,6 +45,52 @@ function MentorHome() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
+  // If user exists and profile completion is below threshold, show minimal view only
+  const incomplete = userData && (userData.profileCompletion ?? 0) < 75;
+  if (incomplete) {
+    return (
+      <>
+        <NavBar />
+        <div className="min-h-screen bg-linear-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+          <div className="relative pt-28 pb-20 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto">
+              <div className="text-center mb-16 animate-fade-in">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 backdrop-blur-xl border border-purple-500/20 mb-6 animate-slide-down">
+                  <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" />
+                  <span className="text-purple-300 text-sm font-medium">Making a Difference</span>
+                </div>
+
+                <h1 className="text-5xl md:text-7xl font-black text-white mb-4 animate-slide-up tracking-tight">
+                  <span className="bg-linear-to-r from-purple-400 via-pink-400 to-purple-400 text-transparent bg-clip-text animate-gradient-x">
+                    {greeting},
+                  </span>
+                  <br />
+                  <span className="text-white">{userData?.fullName || 'Mentor'}!</span>
+                </h1>
+
+                <p className="text-xl text-slate-300 max-w-2xl mx-auto mb-12 animate-slide-up-delayed leading-relaxed">
+                  Please complete your mentor profile to accept requests and access the app.
+                </p>
+
+                <div className="max-w-2xl mx-auto mt-6">
+                  <div className="flex items-center justify-between gap-4 bg-yellow-500/10 border border-yellow-500/20 text-yellow-300 px-4 py-3 rounded-xl">
+                    <div>
+                      <strong>Fill your profile to accept requests</strong>
+                      <div className="text-slate-400 text-sm">Add your expertise, availability and bio so students can request you</div>
+                    </div>
+                    <div>
+                      <button onClick={() => navigate('/profilementor')} className="px-4 py-2 rounded-lg bg-yellow-500 text-white font-medium">Complete Profile</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   const stats = [
     { icon: Send, label: 'Pending Requests', value: '5', color: 'from-purple-500 to-pink-500' },
     { icon: MessageCircle, label: 'Active Chats', value: '8', color: 'from-blue-500 to-cyan-500' },
@@ -199,6 +245,21 @@ function MentorHome() {
                 <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" />
                 <span className="text-purple-300 text-sm font-medium">Making a Difference</span>
               </div>
+
+              {/* Complete profile banner for mentors */}
+              {userData?.profileCompletion < 75 && (
+                <div className="max-w-2xl mx-auto mt-6">
+                  <div className="flex items-center justify-between gap-4 bg-yellow-500/10 border border-yellow-500/20 text-yellow-300 px-4 py-3 rounded-xl">
+                    <div>
+                      <strong>Fill your profile to accept requests</strong>
+                      <div className="text-slate-400 text-sm">Add your expertise, availability and bio so students can request you</div>
+                    </div>
+                    <div>
+                      <button onClick={() => navigate('/profilementor')} className="px-4 py-2 rounded-lg bg-yellow-500 text-white font-medium">Complete Profile</button>
+                    </div>
+                  </div>
+                </div>
+              )}
               
               <h1 className="text-5xl md:text-7xl font-black text-white mb-4 animate-slide-up tracking-tight">
                 <span className="bg-linear-to-r from-purple-400 via-pink-400 to-purple-400 text-transparent bg-clip-text animate-gradient-x">

@@ -6,19 +6,26 @@ const createQuestion=async (req,res)=>{
     try {
         const data=req.body
         const userId=req.userId
-        const acceptedData=["title","descrption","category","tags"]
+        const acceptedData=["title","description","category","tags","questionType","targetMentorId"]
         const formdata={}
-        for(i in acceptedData){
-            if(data[i]!==undefined){
-                formdata[i]=data[i]
+        for(let field of acceptedData){
+            if(data[field]!==undefined){
+                formdata[field]=data[field]
             }
         }
-        data.author=userId
+        formdata.author=userId
+        
+        // Map targetMentorId to targetMentor for database
+        if(formdata.targetMentorId){
+            formdata.targetMentor=formdata.targetMentorId
+            delete formdata.targetMentorId
+        }
+        
         if(req.file){
             const imageUrl=await uploadToCloudinary(req.file.path)
-            data.attachment=imageUrl
+            formdata.attachment=imageUrl
         }
-        const question=await Question.create(data)
+        const question=await Question.create(formdata)
         return res.status(200).json({message:"successfully question posted",question})
     } catch (error) {
         return res.status(500).json(error)
@@ -29,7 +36,9 @@ const createQuestion=async (req,res)=>{
 const getQuestionById = async (req, res) => {
   try {
     const { id } = req.params;
-    const question = await Question.findById(id).populate("author", "fullName email profileImage");
+    const question = await Question.findById(id)
+      .populate("author", "fullName email profileImage")
+      .populate("targetMentor", "fullName email profileImage domain position");
     
     if (!question) {
       return res.status(404).json({ message: "Question not found" });
@@ -45,19 +54,19 @@ const editQuestion=async (req,res)=>{
     try {
         const data=req.body
         const {id}=req.params
-        const acceptedData=["title","descrption","category","tags"]
+        const acceptedData=["title","description","category","tags"]
         const formdata={}
-        for(i in acceptedData){
-            if(data[i]!==undefined){
-                formdata[i]=data[i]
+        for(let field of acceptedData){
+            if(data[field]!==undefined){
+                formdata[field]=data[field]
             }
         }
         
         if(req.file){
             const imageUrl=await uploadToCloudinary(req.file.path)
-            data.attachment=imageUrl
+            formdata.attachment=imageUrl
         }
-        const question=await Question.findByIdAndUpdate(id,data,{
+        const question=await Question.findByIdAndUpdate(id,formdata,{
       new: true,
       runValidators: true,
     })
@@ -99,28 +108,11 @@ const deleteQuestion = async (req, res) => {
 };
 
 
-// const getAllQuestions = async (req, res) => {
-//   try {
-//     const { category, tags, search } = req.query;
-//     const filter = {};
-    
-//     if (category) filter.category = category;
-//     if (tags) filter.tags = { $in: tags.split(",") };
-//     if (search) filter.title = { $regex: search, $options: "i" };
-    
-//     const questions = await Question.find(filter)
-//       .populate("author", "fullName email profileImage")
-//       .sort({ createdAt: -1 });
-    
-//     return res.status(200).json(questions);
-//   } catch (error) {
-//     return res.status(500).json({ message: "Error fetching questions", error: error.message });
-//   }
-// };
+
 
 const getAllQuestions = async (req, res) => {
   try {
-    const questions = await Question.find().populate("author").sort({createdAt:-1});
+    const questions = await Question.find({questionType:"all"}).populate("author").sort({createdAt:-1});
 
     if (questions.length === 0) {
       return res.status(404).json({ message: "No questions found" });
@@ -152,5 +144,26 @@ const getMyQuestions = async (req, res) => {
   }
 };
 
+const getAssignedQuestions = async (req, res) => {
+  try {
+    const mentorId = req.userId;
+    const questions = await Question.find({ 
+      targetMentor: mentorId,
+      questionType: "specific"
+    })
+      .populate("author", "fullName email profileImage")
+      .populate("targetMentor", "fullName email profileImage domain")
+      .sort({ createdAt: -1 });
 
-module.exports={createQuestion, getMyQuestions,getQuestionById,editQuestion,deleteQuestion,getAllQuestions}
+    if (questions.length === 0) {
+      return res.status(200).json([]);
+    }
+    
+    return res.status(200).json(questions);
+  } catch (error) {
+    return res.status(500).json({ message: "Error fetching assigned questions", error: error.message });
+  }
+};
+
+
+module.exports={createQuestion, getMyQuestions, getAssignedQuestions, getQuestionById, editQuestion, deleteQuestion, getAllQuestions}

@@ -104,16 +104,16 @@ function MyQueries() {
   };
 
   const getStatusBadge = (question) => {
-    if (question.responses && question.responses.length > 0) {
+    if (question.status === 'accepted') {
       return {
         icon: CheckCircle,
-        label: "Answered",
+        label: "Accepted",
         color: "from-green-500 to-emerald-500"
       };
     }
     return {
       icon: Clock,
-      label: "Waiting",
+      label: "Pending",
       color: "from-yellow-500 to-amber-500"
     };
   };
@@ -205,13 +205,22 @@ function MyQueries() {
                     key={q._id}
                     className="bg-slate-800/50 rounded-xl p-6 text-white"
                   >
-                    <div className="flex justify-between mb-3">
+                  <div className="flex justify-between mb-3">
                       <h3 className="text-xl font-bold">{q.title}</h3>
-                      <span
-                        className={`px-3 py-1 rounded-lg bg-linear-to-r ${badge.color}`}
-                      >
-                        <Icon size={14} /> {badge.label}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-1 text-xs rounded-lg font-semibold ${
+                          q.questionType === 'specific' 
+                            ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' 
+                            : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                        }`}>
+                          {q.questionType === 'specific' ? '👤 Specific Mentor' : '👥 Open to All'}
+                        </span>
+                        <span
+                          className={`px-3 py-1 rounded-lg bg-linear-to-r ${badge.color}`}
+                        >
+                          <Icon size={14} /> {badge.label}
+                        </span>
+                      </div>
                     </div>
 
                     <p className="text-slate-300 mb-4">
@@ -221,10 +230,6 @@ function MyQueries() {
                     <div className="flex items-center gap-4 text-sm text-slate-400">
                       <span className="flex gap-1">
                         <Calendar size={14} /> {formatDate(q.createdAt)}
-                      </span>
-                      <span className="flex gap-1">
-                        <MessageCircle size={14} />
-                        {q.responses?.length || 0} responses
                       </span>
                     </div>
 
@@ -236,12 +241,23 @@ function MyQueries() {
                         <Eye size={14} /> View
                       </button>
 
-                      <button
-                        onClick={() => navigate(`/question/${q._id}/edit`)}
-                        className="px-4 py-2 bg-slate-700 rounded-lg"
-                      >
-                        <Edit size={14} /> Edit
-                      </button>
+                      {q.status !== 'accepted' && (
+                        <button
+                          onClick={() => navigate(`/question/${q._id}/edit`)}
+                          className="px-4 py-2 bg-slate-700 rounded-lg"
+                        >
+                          <Edit size={14} /> Edit
+                        </button>
+                      )}
+
+                      {q.status === 'accepted' && (
+                        <button
+                          onClick={() => navigate(`/user/messages`)}
+                          className="px-4 py-2 bg-blue-600 rounded-lg"
+                        >
+                          <MessageCircle size={14} /> Chat
+                        </button>
+                      )}
 
                       <button
                         onClick={() => setDeleteConfirm(q._id)}

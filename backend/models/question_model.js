@@ -29,6 +29,16 @@ const questionSchema=mongoose.Schema({
       type:String,
       enum:["pending","accepted"],
       default:"pending"
+    },
+    questionType:{
+      type:String,
+      enum:["all","specific"],
+      default:"all"
+    },
+    targetMentor:{
+      type:mongoose.Schema.Types.ObjectId,
+      ref:"User",
+      default:null
     }
 }, {timestamps:true})
 

@@ -16,6 +16,8 @@ import ViewQuestion from "./pages/ViewQuestion";
 import EditQuestion from "./pages/EditQuestion";
 import MyRequests from "./pages/MyRequests";
 import MentorActiveChats from "./pages/MentorActiveChats";
+import Guidelines from "./pages/Guidelines";
+import UserMessages from "./pages/UserMessages"
 
 export const serverUrl = "http://localhost:3000";
 
@@ -50,9 +52,9 @@ function App() {
         }
       />
 
-      {/* Mentor Self Profile */}
+      {/* Mentor Profile (by id) */}
       <Route
-        path="/mentor/profile"
+        path="/mentor/:mentorId"
         element={
           userData?.role === "student" ? (
             <MentorProfilePage />
@@ -74,7 +76,7 @@ function App() {
       <Route
         path="/question/:id"
         element={
-          userData?.role === "student" ? <ViewQuestion /> : <Navigate to="/" />
+          userData ? <ViewQuestion /> : <Navigate to="/" />
         }
       />
       <Route
@@ -102,6 +104,12 @@ function App() {
         }
       />
       <Route
+        path="/user/messages"
+        element={
+          userData?.role == "student" ? <UserMessages /> : <Navigate to={"/"} />
+        }
+      />
+      <Route
         path="/mentor/requests"
         element={
           userData?.role == "mentor" ? <MyRequests /> : <Navigate to={"/"} />
@@ -111,6 +119,12 @@ function App() {
         path="/mentor/chats"
         element={
           userData?.role == "mentor" ? <MentorActiveChats /> : <Navigate to={"/"} />
+        }
+      />
+      <Route
+        path="/mentor/guidelines"
+        element={
+          userData?.role == "mentor" ? <Guidelines /> : <Navigate to={"/"} />
         }
       />
        

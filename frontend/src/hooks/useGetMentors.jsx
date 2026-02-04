@@ -1,12 +1,13 @@
 import React from "react";
 import { useEffect } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { serverUrl } from "../App";
 import { addMentors} from "../Redux/userSlice";
 import axios from "axios";
 
 function useGetMentors() {
   const dispatch = useDispatch();
+  const {userData}=useSelector(state=>state.user)
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -20,7 +21,7 @@ function useGetMentors() {
       }
     };
     fetchData();
-  }, []);
+  }, [userData]);
 }
 
 export default useGetMentors;
