@@ -18,6 +18,8 @@ import MyRequests from "./pages/MyRequests";
 import MentorActiveChats from "./pages/MentorActiveChats";
 import Guidelines from "./pages/Guidelines";
 import UserMessages from "./pages/UserMessages"
+import { useEffect } from "react";
+import { getSocket } from "../socket";
 
 export const serverUrl = "http://localhost:3000";
 
@@ -26,6 +28,14 @@ function App() {
   useGetMentors();
   useMyQueriesById();
   const { userData } = useSelector((state) => state.user);
+
+  useEffect(()=>{
+    if(!userData?._id) return;
+    const socket=getSocket()
+
+    socket.emit("identity",{userId:userData._id})
+    
+  },[userData?._id])
 
   return (
     <Routes>

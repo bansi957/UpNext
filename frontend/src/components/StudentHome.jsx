@@ -1,7 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { serverUrl } from '../App';
+import { setActiveChat } from '../Redux/chatSlice';
 import { 
   MessageCircle, 
   Send, 
@@ -12,17 +15,25 @@ import {
   BookOpen,
   ArrowRight,
   Zap,
-  Target,
-  Brain,
-  Rocket
+  Rocket,
+  Lightbulb,
+  Target
 } from 'lucide-react';
 import NavBar from './NavBar';
 
 function StudentHome() {
   const { userData } = useSelector(state => state.user);
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const [greeting, setGreeting] = useState('');
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [recentConversations, setRecentConversations] = useState([]);
+  const [stats, setStats] = useState([
+    { icon: Send, label: 'Active Requests', value: '0', color: 'from-purple-500 to-pink-500' },
+    { icon: MessageCircle, label: 'Conversations', value: '0', color: 'from-blue-500 to-cyan-500' },
+    { icon: Award, label: 'Completed', value: '0', color: 'from-green-500 to-emerald-500' }
+  ]);
+  const [loading, setLoading] = useState(true);
 
   // Dynamic greeting based on time
   useEffect(() => {
@@ -31,6 +42,35 @@ function StudentHome() {
     else if (hour < 17) setGreeting('Good Afternoon');
     else setGreeting('Good Evening');
   }, []);
+
+  // Fetch recent conversations and stats
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const chatsRes = await axios.get(`${serverUrl}/api/chats/get-student-chats`, {
+          withCredentials: true
+        });
+
+        const chats = chatsRes.data || [];
+        setRecentConversations(chats.slice(0, 3));
+
+        setStats([
+          { icon: Send, label: 'Active Requests', value: chats.length > 0 ? chats.length.toString() : '0', color: 'from-purple-500 to-pink-500' },
+          { icon: MessageCircle, label: 'Conversations', value: chats.length.toString(), color: 'from-blue-500 to-cyan-500' },
+          { icon: Award, label: 'Completed', value: '0', color: 'from-green-500 to-emerald-500' }
+        ]);
+
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setLoading(false);
+      }
+    };
+
+    if (userData?.profileCompletion >= 75) {
+      fetchData();
+    }
+  }, [userData]);
 
   // Mouse position tracking for parallax effect
   useEffect(() => {
@@ -44,10 +84,22 @@ function StudentHome() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  const stats = [
-    { icon: Send, label: 'Active Requests', value: '4', color: 'from-purple-500 to-pink-500' },
-    { icon: MessageCircle, label: 'Conversations', value: '12', color: 'from-blue-500 to-cyan-500' },
-    { icon: Award, label: 'Completed', value: '8', color: 'from-green-500 to-emerald-500' }
+  const motivationalQuotes = [
+    {
+      quote: "Your career journey starts with a single conversation",
+      icon: Lightbulb,
+      gradient: 'from-purple-500 via-pink-500 to-purple-500'
+    },
+    {
+      quote: "Every mentor was once where you are now",
+      icon: Target,
+      gradient: 'from-blue-500 via-cyan-500 to-blue-500'
+    },
+    {
+      quote: "Growth happens outside your comfort zone",
+      icon: Rocket,
+      gradient: 'from-green-500 via-emerald-500 to-green-500'
+    }
   ];
 
   const quickActions = [
@@ -75,47 +127,10 @@ function StudentHome() {
     }
   ];
 
-  const recentActivity = [
-    {
-      type: 'accepted',
-      message: 'Priya Sharma accepted your Software Engineering query',
-      time: '5 mins ago',
-      icon: Award,
-      color: 'from-green-500 to-emerald-500'
-    },
-    {
-      type: 'message',
-      message: 'New response from Vikram on Career Switch',
-      time: '1 hour ago',
-      icon: MessageCircle,
-      color: 'from-blue-500 to-cyan-500'
-    },
-    {
-      type: 'achievement',
-      message: 'You\'ve reached 10 mentorship sessions! 🎉',
-      time: '3 hours ago',
-      icon: Sparkles,
-      color: 'from-purple-500 to-pink-500'
-    }
-  ];
-
-  const motivationalQuotes = [
-    {
-      quote: "Your career journey starts with a single conversation",
-      icon: Brain,
-      gradient: 'from-purple-500 via-pink-500 to-purple-500'
-    },
-    {
-      quote: "Every mentor was once where you are now",
-      icon: Target,
-      gradient: 'from-blue-500 via-cyan-500 to-blue-500'
-    },
-    {
-      quote: "Growth happens outside your comfort zone",
-      icon: Rocket,
-      gradient: 'from-green-500 via-emerald-500 to-green-500'
-    }
-  ];
+  const formatDate = (iso) => {
+    if (!iso) return "";
+    return new Date(iso).toLocaleString();
+  };
 
   const [currentQuote, setCurrentQuote] = useState(0);
 
@@ -328,42 +343,67 @@ function StudentHome() {
               </div>
             </div>
 
-            {/* Recent Activity & Motivation */}
+            {/* Recent Conversations & Motivation */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               
-              {/* Recent Activity */}
+              {/* Recent Conversations */}
               <div>
                 <h2 className="text-3xl font-black text-white mb-6 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-linear-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
-                    <Sparkles className="w-6 h-6 text-white" />
+                    <MessageCircle className="w-6 h-6 text-white" />
                   </div>
-                  Recent Activity
+                  Recent Conversations
                 </h2>
                 
-                <div className="space-y-4">
-                  {recentActivity.map((activity, index) => {
-                    const Icon = activity.icon;
-                    return (
-                      <div
-                        key={index}
-                        className="group bg-slate-800/40 backdrop-blur-xl rounded-2xl p-5 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-purple-500/10"
+                {loading ? (
+                  <div className="p-8 text-center text-slate-400">Loading conversations...</div>
+                ) : recentConversations.length === 0 ? (
+                  <div className="p-12 text-center bg-slate-800/40 backdrop-blur-xl rounded-2xl border border-purple-500/20">
+                    <MessageCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-slate-400 text-lg">No conversations yet</p>
+                    <p className="text-slate-500 text-sm mt-2">Ask a question to start chatting with mentors</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {recentConversations.map((chat) => (
+                      <button
+                        key={chat._id}
+                        onClick={() => {
+                          dispatch(setActiveChat(chat));
+                          navigate('/user/messages');
+                        }}
+                        className="group w-full bg-slate-800/40 backdrop-blur-xl rounded-2xl p-5 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-purple-500/10 text-left"
                       >
                         <div className="flex items-start gap-4">
-                          <div className={`w-12 h-12 rounded-xl bg-linear-to-br ${activity.color} flex items-center justify-center shrink-0 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                            <Icon className="w-6 h-6 text-white" />
+                          <div className="relative">
+                            {chat.mentorImage ? (
+                              <img
+                                src={chat.mentorImage}
+                                alt={chat.mentorName}
+                                className="w-12 h-12 rounded-xl object-cover shadow-md"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 rounded-xl bg-linear-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold shadow-md">
+                                {chat.mentorName?.charAt(0).toUpperCase()}
+                              </div>
+                            )}
                           </div>
                           
-                          <div className="flex-1">
-                            <p className="text-slate-200 font-medium mb-1 leading-relaxed">
-                              {activity.message}
-                            </p>
-                            <p className="text-slate-500 text-sm">{activity.time}</p>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between mb-1">
+                              <p className="font-bold text-white group-hover:text-purple-400 transition-colors truncate">
+                                {chat.mentorName}
+                              </p>
+                              <span className="text-xs text-slate-500 shrink-0 ml-2">{formatDate(chat.lastMessageTime)}</span>
+                            </div>
+                            <p className="text-xs text-purple-300 mb-2 truncate">{chat.questionTitle || 'Conversation'}</p>
+                            <p className="text-sm text-slate-400 line-clamp-1">{chat.lastMessage || 'No messages yet'}</p>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Motivational Section */}

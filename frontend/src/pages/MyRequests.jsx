@@ -3,10 +3,13 @@ import NavBar from "../components/NavBar";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { serverUrl } from "../App";
-import { Send, Clock, FileText, CheckCircle, Eye, User } from "lucide-react";
+import { Send, Clock, FileText, CheckCircle, Eye, User, MessageCircle } from "lucide-react";
+import { useSelector, useDispatch } from "react-redux";
+import { setActiveChat } from "../Redux/chatSlice";
 
 function MyRequests() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all"); // all | pending | accepted
@@ -18,14 +21,12 @@ function MyRequests() {
           `${serverUrl}/api/questions/mentor-requests`,
           { withCredentials: true },
         );
-        const res2 = await axios.get(`${serverUrl}/api/questions/assigned`, {
-          withCredentials: true,
-        });
+       
 
-        // Properly combine both arrays
-        const broadcastQuestions = res1.data || [];
-        const assignedQuestions = res2.data || [];
-        const allRequests = [...assignedQuestions, ...broadcastQuestions];
+        // // Properly combine both arrays
+        // const broadcastQuestions = res1.data || [];
+        // const assignedQuestions = res2.data || [];
+        const allRequests = res1.data
 
         setRequests(allRequests);
         setLoading(false);
@@ -42,21 +43,48 @@ function MyRequests() {
     if (!iso) return "";
     return new Date(iso).toLocaleString();
   };
-
+  const {userData}=useSelector(state=>state.user)
   const handleAccept = async (reqId) => {
     setRequests((prev) =>
       prev.map((r) => (r._id === reqId ? { ...r, status: "accepted" } : r)),
     );
     try {
-      await axios.post(
-        `${serverUrl}/api/mentorship/requests/${reqId}/accept`,
-        {},
+      const res=await axios.put(
+        `${serverUrl}/api/questions/update-status`,
+        {status:"accepted",mentorId:userData._id,questionId:reqId},
         { withCredentials: true },
       );
+      
+      // Get the chat details before navigating
+      if(res.data.chatId) {
+        try {
+          const chatRes = await axios.get(
+            `${serverUrl}/api/chats/${res.data.chatId}`,
+            { withCredentials: true }
+          );
+          // Set the active chat in Redux
+          dispatch(setActiveChat(chatRes.data));
+        } catch(chatErr) {
+          console.error("Error fetching chat details:", chatErr);
+        }
+      }
+      
+      // Navigate to active chats
+      navigate(`/mentor/chats`)
     } catch (err) {
       console.warn("Accept request failed (dev):", err?.message || err);
     }
   };
+  const handleChat=async (questionId)=>{
+    try {
+      const result=await axios.get(`${serverUrl}/api/chats/question/${questionId}`,{withCredentials:true})
+      dispatch(setActiveChat(result.data))
+      navigate(`/mentor/chats`)
+    } catch (error) {
+      console.log(error)
+    }
+  }
+ 
 
   const filtered = requests.filter((r) =>
     filter === "all" ? true : (r.status === filter || r.questionType==filter),
@@ -191,14 +219,23 @@ function MyRequests() {
                       <span>View</span>
                     </button>
 
-                    <button
-                      onClick={() => handleAccept(req._id)}
-                      disabled={req.status === "accepted"}
-                      className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-medium text-sm ${req.status === "accepted" ? "bg-green-600/70 text-white cursor-not-allowed" : "bg-linear-to-r from-purple-600 to-pink-600 text-white hover:shadow-lg"}`}
-                    >
-                      <CheckCircle className="w-4 h-4 shrink-0" />
-                      <span>{req.status === "accepted" ? "Accepted" : "Accept"}</span>
-                    </button>
+                    {req.status === "accepted" ? (
+                      <button
+                        onClick={()=>handleChat(req._id)}
+                        className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-medium text-sm bg-linear-to-r from-blue-600 to-cyan-600 text-white hover:shadow-lg transition-all"
+                      >
+                        <MessageCircle className="w-4 h-4 shrink-0" />
+                        <span>Chat</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleAccept(req._id)}
+                        className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-medium text-sm bg-linear-to-r from-purple-600 to-pink-600 text-white hover:shadow-lg"
+                      >
+                        <CheckCircle className="w-4 h-4 shrink-0" />
+                        <span>Accept</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               ))

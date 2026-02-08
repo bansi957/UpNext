@@ -39,6 +39,9 @@ const questionSchema=mongoose.Schema({
       type:mongoose.Schema.Types.ObjectId,
       ref:"User",
       default:null
+    },
+    assignedTo:{
+      type:mongoose.Schema.Types.ObjectId,
     }
 }, {timestamps:true})
 

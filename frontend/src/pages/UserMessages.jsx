@@ -15,27 +15,31 @@ import {
   MessageCircle
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
+import { setActiveChat } from '../Redux/chatSlice';
+import { getSocket } from '../../socket';
 
 function UserMessages() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
+  // Redux state
+  const activeChat = useSelector((state) => state.chat?.activeChat);
+
   // Local state
   const [allChats, setAllChats] = useState([]);
   const [filteredChats, setFilteredChats] = useState([]);
-  const [activeChat, setActiveChat] = useState(null);
   const [currentMessages, setCurrentMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobileView, setIsMobileView] = useState(false);
   const messagesEndRef = useRef(null);
-
+  const {userData}=useSelector(state=>state.user)
   // Fetch active chats with mentors
   useEffect(() => {
     const fetchChats = async () => {
       try {
-        const res = await axios.get(`${serverUrl}/api/chats/mentor-messages`, {
+        const res = await axios.get(`${serverUrl}/api/chats/get-student-chats`, {
           withCredentials: true
         });
         setAllChats(res.data || []);
@@ -51,15 +55,68 @@ function UserMessages() {
   }, []);
 
   // Fetch messages for active chat
+useEffect(()=>{
+  if(!userData?._id) return;
+
+  const socket=getSocket()
+
+  socket.on('send-message',({messages,studentId,chatId})=>{
+    if(studentId==userData._id && chatId==activeChat?._id){
+      setCurrentMessages(messages)
+      
+      // Mark mentor's unread messages as read
+      const mentorMessageIds = messages
+        ?.filter(msg => msg.senderRole === 'mentor' && !msg.isRead)
+        .map(msg => msg._id) || [];
+
+      if (mentorMessageIds.length > 0) {
+        axios.post(
+          `${serverUrl}/api/chats/mark-read/${chatId}`,
+          { messageIds: mentorMessageIds },
+          { withCredentials: true }
+        ).catch(err => console.error('Error marking messages as read:', err));
+      }
+    }
+  })
+
+  // socket.on('messages-read',({chatId, messageIds})=>{
+  //   if(chatId==activeChat?._id){
+  //     setCurrentMessages(prev => 
+  //       prev.map(msg => 
+  //         messageIds.includes(msg._id) || messageIds.includes(msg?._id.toString()) ? {...msg, isRead: true} : msg
+  //       )
+  //     )
+  //   }
+  // })
+
+  return ()=>{
+    socket.off('send-message')
+    socket.off('messages-read')
+  }
+},[userData?._id,activeChat,serverUrl])
+
   useEffect(() => {
     if (activeChat?._id) {
       const fetchMessages = async () => {
         try {
           const res = await axios.get(
-            `${serverUrl}/api/chats/${activeChat._id}/messages`,
+            `${serverUrl}/api/chats/${activeChat._id}`,
             { withCredentials: true }
           );
-          setCurrentMessages(res.data || []);
+          setCurrentMessages(res.data.messages || []);
+
+          // Mark all mentor's messages as read
+          const mentorMessageIds = res.data.messages
+            ?.filter(msg => msg.senderRole === 'mentor' && !msg.isRead)
+            .map(msg => msg._id) || [];
+
+          if (mentorMessageIds.length > 0) {
+            axios.post(
+              `${serverUrl}/api/chats/mark-read/${activeChat._id}`,
+              { messageIds: mentorMessageIds },
+              { withCredentials: true }
+            ).catch(err => console.error('Error marking messages as read:', err));
+          }
         } catch (err) {
           console.error('Error fetching messages:', err);
         }
@@ -94,13 +151,13 @@ function UserMessages() {
     };
 
     try {
-      await axios.post(
-        `${serverUrl}/api/chats/${activeChat._id}/messages`,
-        { text: messageInput },
+      const res=await axios.post(
+        `${serverUrl}/api/chats/send-message/${activeChat._id}`,
+        newMessage,
         { withCredentials: true }
       );
 
-      setCurrentMessages([...currentMessages, newMessage]);
+      setCurrentMessages([...currentMessages,res.data]);
       setMessageInput('');
 
       setAllChats((prev) =>
@@ -116,8 +173,11 @@ function UserMessages() {
   };
 
   const handleSelectChat = (chat) => {
-    setActiveChat(chat);
-    setIsMobileView(true);
+    dispatch(setActiveChat(chat));
+    // Only set mobile view if on actual mobile device
+    if (window.innerWidth < 768) {
+      setIsMobileView(true);
+    }
   };
 
   const handleBackToChats = () => {
@@ -182,8 +242,13 @@ function UserMessages() {
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-full bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold flex-shrink-0">
-                            {chat.mentorName?.charAt(0).toUpperCase()}
+                          <div className="relative w-12 h-12">
+                            <div className="w-12 h-12 rounded-full bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold flex-shrink-0">
+                              {chat.mentorName?.charAt(0).toUpperCase()}
+                            </div>
+                            {chat.mentorIsOnline && (
+                              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-slate-800"></div>
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-white text-sm">{chat.mentorName}</p>
@@ -206,8 +271,13 @@ function UserMessages() {
                 {/* Chat Header */}
                 <div className="p-4 border-b border-slate-700/50 flex items-center justify-between bg-slate-800/50">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
-                      {activeChat.mentorName?.charAt(0).toUpperCase()}
+                    <div className="relative w-10 h-10">
+                      <div className="w-10 h-10 rounded-full bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
+                        {activeChat.mentorName?.charAt(0).toUpperCase()}
+                      </div>
+                      {activeChat.mentorIsOnline && (
+                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-slate-800"></div>
+                      )}
                     </div>
                     <div>
                       <p className="font-semibold text-white">{activeChat.mentorName}</p>
@@ -220,6 +290,12 @@ function UserMessages() {
                       <MoreVertical className="w-5 h-5" />
                     </button>
                   </div>
+                </div>
+
+                {/* Question Details */}
+                <div className="px-4 py-3 bg-slate-800/30 border-b border-slate-700/50">
+                  <p className="text-xs text-slate-400 mb-1">Question</p>
+                  <p className="text-sm font-semibold text-white truncate">{activeChat.questionTitle || 'Loading...'}</p>
                 </div>
 
                 {/* Messages */}

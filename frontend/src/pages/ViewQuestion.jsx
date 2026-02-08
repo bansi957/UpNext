@@ -16,6 +16,7 @@ import {
 import axios from 'axios';
 import { serverUrl } from '../App';
 import { deleteQuestion } from '../Redux/userSlice';
+import { setActiveChat } from '../Redux/chatSlice';
 
 function ViewQuestion() {
   const navigate = useNavigate();
@@ -25,26 +26,64 @@ function ViewQuestion() {
   const [acceptingRequest, setAcceptingRequest] = useState(false);
   const dispatch = useDispatch();
 
-  const handleAcceptRequest = async (questionId) => {
-    setAcceptingRequest(true);
+  // const handleAcceptRequest = async (questionId) => {
+  //   setAcceptingRequest(true);
+  //   try {
+  //     await axios.post(
+  //       `${serverUrl}/api/questions/${questionId}/accept`,
+  //       {},
+  //       { withCredentials: true }
+  //     );
+  //     alert("Question accepted! You can now respond.");
+  //     // Optionally refresh the question data
+  //     const result = await axios.get(`${serverUrl}/api/questions/${questionId}`, { withCredentials: true });
+  //     setQuestion(result.data);
+  //   } catch (error) {
+  //     console.error("Error accepting question:", error);
+  //     alert("Failed to accept question");
+  //   } finally {
+  //     setAcceptingRequest(false);
+  //   }
+  // };
+
+  const handleChat=async (questionId)=>{
     try {
-      await axios.post(
-        `${serverUrl}/api/questions/${questionId}/accept`,
-        {},
-        { withCredentials: true }
-      );
-      alert("Question accepted! You can now respond.");
-      // Optionally refresh the question data
-      const result = await axios.get(`${serverUrl}/api/questions/${questionId}`, { withCredentials: true });
-      setQuestion(result.data);
+      const result=await axios.get(`${serverUrl}/api/chats/question/${questionId}`,{withCredentials:true})
+      dispatch(setActiveChat(result.data))
+      navigate(`/user/messages`)
     } catch (error) {
-      console.error("Error accepting question:", error);
-      alert("Failed to accept question");
-    } finally {
-      setAcceptingRequest(false);
+      console.log(error)
+    }
+  }
+ 
+  const handleAcceptRequest = async (reqId) => {
+    try {
+      const res=await axios.put(
+        `${serverUrl}/api/questions/update-status`,
+        {status:"accepted",mentorId:userData._id,questionId:reqId},
+        { withCredentials: true },
+      );
+      
+      // Get the chat details before navigating
+      if(res.data.chatId) {
+        try {
+          const chatRes = await axios.get(
+            `${serverUrl}/api/chats/${res.data.chatId}`,
+            { withCredentials: true }
+          );
+          // Set the active chat in Redux
+          dispatch(setActiveChat(chatRes.data));
+        } catch(chatErr) {
+          console.error("Error fetching chat details:", chatErr);
+        }
+      }
+      
+      // Navigate to active chats
+      navigate(`/mentor/chats`)
+    } catch (err) {
+      console.warn("Accept request failed (dev):", err?.message || err);
     }
   };
-
   const handleDeleteQuestion = async (questionId) => {
     try {
       await axios.delete(
@@ -242,7 +281,7 @@ function ViewQuestion() {
                 {question.status === 'accepted' && (
                   <div className="mt-8">
                     <button
-                      onClick={() => navigate(userData?.role === 'mentor' ? '/mentor/chats' : '/user/messages')}
+                      onClick={() => handleChat(question._id)}
                       className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-xl bg-linear-to-r from-blue-600 to-cyan-600 text-white font-medium text-sm sm:text-base shadow-2xl shadow-blue-500/50 hover:scale-105 transition-all w-full sm:w-auto"
                     >
                       <CheckCircle className="w-4 sm:w-5 h-4 sm:h-5 shrink-0" />

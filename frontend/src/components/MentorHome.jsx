@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { serverUrl } from '../App';
+import { setActiveChat } from '../Redux/chatSlice';
 import { 
   MessageCircle, 
   Send, 
@@ -10,20 +13,26 @@ import {
   Sparkles,
   Users,
   BookOpen,
-  Flame,
-  Trophy,
-  Target,
   Zap,
   CheckCircle,
-  AlertCircle
+  Eye
 } from 'lucide-react';
 import NavBar from './NavBar';
 
 function MentorHome() {
   const { userData } = useSelector(state => state.user);
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const [greeting, setGreeting] = useState('');
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [pendingRequests, setPendingRequests] = useState([]);
+  const [activeChats, setActiveChats] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState([
+    { icon: Send, label: 'Pending Requests', value: '0', color: 'from-purple-500 to-pink-500' },
+    { icon: MessageCircle, label: 'Active Chats', value: '0', color: 'from-blue-500 to-cyan-500' },
+    { icon: Star, label: 'Your Rating', value: '0', color: 'from-yellow-500 to-orange-500' }
+  ]);
 
   // Dynamic greeting based on time
   useEffect(() => {
@@ -32,6 +41,44 @@ function MentorHome() {
     else if (hour < 17) setGreeting('Good Afternoon');
     else setGreeting('Good Evening');
   }, []);
+
+  // Fetch pending requests and active chats
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [requestsRes, chatsRes] = await Promise.all([
+          axios.get(`${serverUrl}/api/questions/mentor-requests`, { withCredentials: true }),
+          axios.get(`${serverUrl}/api/chats/get-mentor-chats`, { withCredentials: true })
+        ]);
+
+        const requests = requestsRes.data || [];
+        const chats = chatsRes.data || [];
+
+        // Get only pending requests
+        const pending = requests.filter(r => r.status === 'pending').slice(0, 4);
+        setPendingRequests(pending);
+        
+        // Get active chats
+        setActiveChats(chats.slice(0, 4));
+
+        // Update stats
+        setStats([
+          { icon: Send, label: 'Pending Requests', value: requests.filter(r => r.status === 'pending').length.toString(), color: 'from-purple-500 to-pink-500' },
+          { icon: MessageCircle, label: 'Active Chats', value: chats.length.toString(), color: 'from-blue-500 to-cyan-500' },
+          { icon: Star, label: 'Your Rating', value: userData?.rating ? userData.rating.toFixed(1) : '0', color: 'from-yellow-500 to-orange-500' }
+        ]);
+
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setLoading(false);
+      }
+    };
+
+    if (userData?.profileCompletion >= 75) {
+      fetchData();
+    }
+  }, [userData]);
 
   // Mouse position tracking for parallax effect
   useEffect(() => {
@@ -91,125 +138,47 @@ function MentorHome() {
     );
   }
 
-  const stats = [
-    { icon: Send, label: 'Pending Requests', value: '5', color: 'from-purple-500 to-pink-500' },
-    { icon: MessageCircle, label: 'Active Chats', value: '8', color: 'from-blue-500 to-cyan-500' },
-    { icon: Star, label: 'Your Rating', value: '4.9', color: 'from-yellow-500 to-orange-500' }
-  ];
+  const formatDate = (iso) => {
+    if (!iso) return "";
+    return new Date(iso).toLocaleString();
+  };
 
-  const pendingRequests = [
-    {
-      id: 1,
-      title: "Need guidance on transitioning from mechanical to software",
-      student: "Rahul Verma",
-      studentAvatar: "RV",
-      category: "Career Switch",
-      urgency: "high",
-      postedDate: "30 mins ago",
-      studentYear: "Final Year",
-      college: "IIT Delhi"
-    },
-    {
-      id: 2,
-      title: "How to prepare for Google SDE interview?",
-      student: "Priya Patel",
-      studentAvatar: "PP",
-      category: "Interview Prep",
-      urgency: "medium",
-      postedDate: "2 hours ago",
-      studentYear: "Pre-Final Year",
-      college: "NIT Trichy"
-    },
-    {
-      id: 3,
-      title: "Should I pursue MS or gain work experience first?",
-      student: "Amit Kumar",
-      studentAvatar: "AK",
-      category: "Education",
-      urgency: "low",
-      postedDate: "5 hours ago",
-      studentYear: "Final Year",
-      college: "BITS Pilani"
-    },
-    {
-      id: 4,
-      title: "Advice on startup vs corporate for first job",
-      student: "Sneha Singh",
-      studentAvatar: "SS",
-      category: "Career Path",
-      urgency: "medium",
-      postedDate: "1 day ago",
-      studentYear: "Final Year",
-      college: "IIT Bombay"
+  const handleAccept = async (reqId) => {
+    try {
+      const res = await axios.put(
+        `${serverUrl}/api/questions/update-status`,
+        { status: "accepted", mentorId: userData._id, questionId: reqId },
+        { withCredentials: true }
+      );
+      
+      // Get the chat details before navigating
+      if (res.data.chatId) {
+        try {
+          const chatRes = await axios.get(
+            `${serverUrl}/api/chats/${res.data.chatId}`,
+            { withCredentials: true }
+          );
+          // Set the active chat in Redux
+          dispatch(setActiveChat(chatRes.data));
+        } catch (chatErr) {
+          console.error("Error fetching chat details:", chatErr);
+        }
+      }
+      
+      // Navigate to active chats
+      navigate(`/mentor/chats`);
+      
+      // Refresh pending requests
+      setPendingRequests(prev => prev.filter(r => r._id !== reqId));
+    } catch (err) {
+      console.error("Accept request failed:", err?.message || err);
     }
-  ];
+  };
 
-  const activeChats = [
-    {
-      id: 1,
-      studentName: "Ankit Sharma",
-      studentAvatar: "AS",
-      lastMessage: "Thank you so much! That really helps clarify things.",
-      timestamp: "5 mins ago",
-      unread: 1,
-      topic: "Frontend Development Roadmap",
-      messagesCount: 15
-    },
-    {
-      id: 2,
-      studentName: "Divya Nair",
-      studentAvatar: "DN",
-      lastMessage: "Could you share some resources for system design?",
-      timestamp: "1 hour ago",
-      unread: 2,
-      topic: "System Design Interview",
-      messagesCount: 23
-    },
-    {
-      id: 3,
-      studentName: "Rohan Gupta",
-      studentAvatar: "RG",
-      lastMessage: "I've completed the projects you suggested!",
-      timestamp: "3 hours ago",
-      unread: 0,
-      topic: "Project Guidance",
-      messagesCount: 31
-    },
-    {
-      id: 4,
-      studentName: "Meera Joshi",
-      studentAvatar: "MJ",
-      lastMessage: "The interview went great! Thanks for your tips 🎉",
-      timestamp: "Yesterday",
-      unread: 0,
-      topic: "Interview Preparation",
-      messagesCount: 42
-    }
-  ];
-
-  const recentActivity = [
-    {
-      type: "streak",
-      message: "7 Day Response Streak! Keep it up! 🔥",
-      time: "Today",
-      icon: Flame,
-      color: "from-orange-500 to-red-500"
-    },
-    {
-      type: "milestone",
-      message: "You've helped 50 students reach their goals! 🎉",
-      time: "2 days ago",
-      icon: Trophy,
-      color: "from-purple-500 to-pink-500"
-    },
-    {
-      type: "appreciation",
-      message: "5 students thanked you this week",
-      time: "3 days ago",
-      icon: CheckCircle,
-      color: "from-green-500 to-emerald-500"
-    }
-  ];
+  const handleChatOpen = (chat) => {
+    dispatch(setActiveChat(chat));
+    navigate('/mentor/chats');
+  };
 
   return (
     <>
@@ -317,54 +286,73 @@ function MentorHome() {
                 Pending Requests
               </h2>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {pendingRequests.map((request, index) => (
-                  <div
-                    key={request.id}
-                    className="group relative bg-slate-800/40 backdrop-blur-xl rounded-2xl p-6 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-purple-500/20 cursor-pointer"
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        request.urgency === 'high' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
-                        request.urgency === 'medium' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
-                        'bg-green-500/20 text-green-400 border border-green-500/30'
-                      }`}>
-                        {request.urgency === 'high' ? 'Urgent' : request.urgency === 'medium' ? 'Normal' : 'Low Priority'}
-                      </span>
-                      <span className="text-xs text-slate-500">{request.category}</span>
-                    </div>
-
-                    <h3 className="text-lg font-bold text-white mb-4 line-clamp-2 group-hover:text-purple-400 transition-colors">
-                      {request.title}
-                    </h3>
-
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-full bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold shadow-md">
-                        {request.studentAvatar}
+              {loading ? (
+                <div className="p-8 text-center text-slate-400">Loading requests...</div>
+              ) : pendingRequests.length === 0 ? (
+                <div className="p-12 text-center bg-slate-800/40 backdrop-blur-xl rounded-2xl border border-purple-500/20">
+                  <p className="text-slate-400 text-lg">No pending requests at the moment</p>
+                  <p className="text-slate-500 text-sm mt-2">Check back soon or view accepted requests in your active chats</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {pendingRequests.map((request) => (
+                    <div
+                      key={request._id}
+                      className="group relative bg-slate-800/40 backdrop-blur-xl rounded-2xl p-6 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-purple-500/20 cursor-pointer"
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/30">
+                          Urgent
+                        </span>
+                        <span className="text-xs text-slate-500">{request.category}</span>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-white">{request.student}</p>
-                        <p className="text-xs text-slate-400">{request.studentYear} • {request.college}</p>
-                      </div>
-                    </div>
 
-                    <div className="flex items-center justify-between pt-4 border-t border-slate-700/50">
-                      <div className="flex items-center gap-2 text-sm text-slate-400">
-                        <Clock className="w-4 h-4" />
-                        <span>{request.postedDate}</span>
+                      <h3 className="text-lg font-bold text-white mb-4 line-clamp-2 group-hover:text-purple-400 transition-colors">
+                        {request.title}
+                      </h3>
+
+                      <div className="flex items-center gap-3 mb-4">
+                        {request.author?.profileImage ? (
+                          <img
+                            src={request.author.profileImage}
+                            alt={request.author.fullName}
+                            className="w-10 h-10 rounded-full object-cover shadow-md"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold shadow-md">
+                            {request.author?.fullName?.charAt(0) || '?'}
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-sm font-medium text-white">{request.author?.fullName}</p>
+                          <p className="text-xs text-slate-400">Requested • {formatDate(request.createdAt)}</p>
+                        </div>
                       </div>
-                      
-                      <button className="flex items-center gap-2 px-4 py-2 bg-linear-to-r from-purple-600 to-pink-600 text-white rounded-lg font-medium hover:shadow-lg hover:shadow-purple-500/50 transition-all">
-                        <span>Accept</span>
-                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                      </button>
+
+                      <div className="flex items-center justify-between pt-4 border-t border-slate-700/50">
+                        <button
+                          onClick={() => navigate(`/question/${request._id}`)}
+                          className="flex items-center gap-2 px-4 py-2 bg-slate-700/50 text-slate-300 rounded-lg font-medium hover:border-purple-500/40 transition-all text-xs"
+                        >
+                          <Eye className="w-4 h-4" />
+                          <span>View</span>
+                        </button>
+                        
+                        <button 
+                          onClick={() => handleAccept(request._id)}
+                          className="flex items-center gap-2 px-4 py-2 bg-linear-to-r from-purple-600 to-pink-600 text-white rounded-lg font-medium hover:shadow-lg hover:shadow-purple-500/50 transition-all text-xs"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                          <span>Accept</span>
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* Active Chats & Activity */}
+            {/* Active Chats & Guidelines */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               
               {/* Active Chats */}
@@ -376,112 +364,98 @@ function MentorHome() {
                   Active Conversations
                 </h2>
                 
-                <div className="space-y-4">
-                  {activeChats.map((chat, index) => (
-                    <div
-                      key={chat.id}
-                      className="group bg-slate-800/40 backdrop-blur-xl rounded-2xl p-5 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-purple-500/10 cursor-pointer"
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className="relative">
-                          <div className="w-12 h-12 rounded-xl bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold shadow-md">
-                            {chat.studentAvatar}
+                {loading ? (
+                  <div className="p-8 text-center text-slate-400">Loading chats...</div>
+                ) : activeChats.length === 0 ? (
+                  <div className="p-12 text-center bg-slate-800/40 backdrop-blur-xl rounded-2xl border border-purple-500/20">
+                    <p className="text-slate-400 text-lg">No active chats yet</p>
+                    <p className="text-slate-500 text-sm mt-2">Accept requests to start conversations with students</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {activeChats.map((chat) => (
+                      <div
+                        key={chat._id}
+                        className="group bg-slate-800/40 backdrop-blur-xl rounded-2xl p-5 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-purple-500/10 cursor-pointer"
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="relative">
+                            {chat.studentImage ? (
+                              <img
+                                src={chat.studentImage}
+                                alt={chat.studentName}
+                                className="w-12 h-12 rounded-xl object-cover shadow-md"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 rounded-xl bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold shadow-md">
+                                {chat.studentName?.charAt(0).toUpperCase()}
+                              </div>
+                            )}
                           </div>
-                          {chat.unread > 0 && (
-                            <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold border-2 border-slate-800">
-                              {chat.unread}
+                          
+                          <div className="flex-1">
+                            <div className="flex items-start justify-between mb-1">
+                              <h3 className="font-bold text-white group-hover:text-purple-400 transition-colors">
+                                {chat.studentName}
+                              </h3>
+                              <span className="text-xs text-slate-500">{formatDate(chat.lastMessageTime)}</span>
                             </div>
-                          )}
-                        </div>
-                        
-                        <div className="flex-1">
-                          <div className="flex items-start justify-between mb-1">
-                            <h3 className="font-bold text-white group-hover:text-purple-400 transition-colors">
-                              {chat.studentName}
-                            </h3>
-                            <span className="text-xs text-slate-500">{chat.timestamp}</span>
-                          </div>
-                          <p className="text-xs text-purple-300 mb-2">{chat.topic}</p>
-                          <p className="text-sm text-slate-400 line-clamp-1">{chat.lastMessage}</p>
-                          <div className="flex items-center gap-2 mt-3">
-                            <span className="text-xs text-slate-500">{chat.messagesCount} messages</span>
-                            <button className="ml-auto flex items-center gap-1 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-medium transition-all">
-                              Reply
-                              <ArrowRight className="w-3 h-3" />
-                            </button>
+                            <p className="text-xs text-purple-300 mb-2">{chat.questionTitle || 'Conversation'}</p>
+                            <p className="text-sm text-slate-400 line-clamp-1">{chat.lastMessage || 'No messages yet'}</p>
+                            <div className="flex items-center gap-2 mt-3">
+                              <span className="text-xs text-slate-500">Chat active</span>
+                              <button 
+                                onClick={() => handleChatOpen(chat)}
+                                className="ml-auto flex items-center gap-1 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-medium transition-all"
+                              >
+                                Open
+                                <ArrowRight className="w-3 h-3" />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {/* Recent Activity & Guidelines */}
-              <div className="space-y-6">
-                {/* Recent Activity */}
-                <div>
-                  <h2 className="text-3xl font-black text-white mb-6 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-linear-to-br from-green-500 to-emerald-500 flex items-center justify-center">
-                      <Trophy className="w-6 h-6 text-white" />
-                    </div>
-                    Recent Activity
-                  </h2>
-                  
-                  <div className="space-y-4">
-                    {recentActivity.map((activity, index) => {
-                      const Icon = activity.icon;
-                      return (
-                        <div
-                          key={index}
-                          className="group bg-slate-800/40 backdrop-blur-xl rounded-2xl p-5 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-purple-500/10"
-                        >
-                          <div className="flex items-start gap-4">
-                            <div className={`w-12 h-12 rounded-xl bg-linear-to-br ${activity.color} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
-                              <Icon className="w-6 h-6 text-white" />
-                            </div>
-                            
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-slate-200 leading-relaxed mb-1">
-                                {activity.message}
-                              </p>
-                              <p className="text-xs text-slate-500">{activity.time}</p>
-                            </div>
-                          </div>
+              {/* Mentor Guidelines - Attractive & Centered */}
+                      <div className="flex items-center justify-center">
+                      <div className="group relative w-full max-w-sm bg-linear-to-br from-purple-600 via-pink-500 to-purple-600 rounded-2xl p-8 text-white shadow-2xl shadow-purple-500/50 hover:shadow-purple-500/80 transition-all duration-300 overflow-hidden animate-slide-up">
+                        {/* Animated background glow */}
+                        <div className="absolute inset-0 bg-linear-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-20 transition-opacity duration-300 animate-pulse-slow" />
+                        
+                        <div className="relative z-10 text-center">
+                        <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shrink-0 mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                          <BookOpen className="w-8 h-8 text-white" />
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Mentor Guidelines */}
-                <div className="bg-linear-to-br from-purple-600 to-pink-600 rounded-2xl p-6 text-white shadow-2xl animate-float">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shrink-0">
-                      <BookOpen className="w-6 h-6 text-white" />
+                        
+                        <h3 className="text-2xl font-black mb-3 group-hover:text-yellow-200 transition-colors">💡 Mentor Tips</h3>
+                        
+                        <p className="text-sm text-white/95 mb-6 leading-relaxed font-medium">
+                          Respond quickly, be empathetic, give actionable advice. Your guidance shapes careers!
+                        </p>
+                        
+                        <button 
+                          onClick={() => navigate('/mentor/guidelines')}
+                          className="group/btn relative inline-flex items-center gap-2 px-6 py-3 bg-white/25 hover:bg-white/40 backdrop-blur-sm rounded-xl text-sm font-bold transition-all duration-300 hover:scale-105 w-full justify-center border border-white/30 hover:border-white/50"
+                        >
+                          <span>Read Guidelines</span>
+                          <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                        </button>
+                        </div>
+                        
+                        {/* Animated border */}
+                        <div className="absolute inset-0 rounded-2xl border border-white/20 group-hover:border-white/40 transition-all duration-300" />
+                      </div>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-xl font-bold mb-2">💡 Mentor Guidelines</h3>
-                      <p className="text-sm text-white/90 mb-4 leading-relaxed">
-                        Respond within 24 hours, be respectful and empathetic, provide actionable advice. Your guidance shapes careers!
-                      </p>
-                      <button 
-                        onClick={() => navigate('/mentor/guidelines')}
-                        className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-sm font-medium transition-all"
-                      >
-                        <span>Read Full Guidelines</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </button>
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+                  </div>
 
-      {/* Custom Styles */}
+                  {/* Custom Styles */}
       <style jsx>{`
         @keyframes fade-in {
           from { opacity: 0; }

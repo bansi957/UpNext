@@ -1,6 +1,6 @@
 const Question=require("../models/question_model")
 const uploadToCloudinary = require("../utils/cloudinary")
-
+const Chat=require("../models/chat_model")
 
 const createQuestion=async (req,res)=>{
     try {
@@ -112,10 +112,38 @@ const deleteQuestion = async (req, res) => {
 
 const getAllQuestions = async (req, res) => {
   try {
-    const questions = await Question.find({questionType:"all"}).populate("author").sort({createdAt:-1});
+    const mentorId = req.userId;
+    
+    // Pending questions open to all mentors
+    const allquestions = await Question.find({
+      questionType: "all",
+      status: "pending"
+    })
+      .populate("author", "fullName email profileImage")
+      .sort({ createdAt: -1 });
+    
+    // Accepted questions by this mentor
+    const acceptedQuestions = await Question.find({
+      questionType: "all",
+      status: "accepted",
+      assignedTo: mentorId
+    })
+      .populate("author", "fullName email profileImage")
+      .sort({ createdAt: -1 });
+    
+    // Specific questions targeted to this mentor (both pending and accepted)
+    const specificQuestions = await Question.find({
+      targetMentor: mentorId,
+      questionType: "specific"
+    })
+      .populate("author", "fullName email profileImage")
+      .sort({ createdAt: -1 });
+    
+    const questions = [...allquestions, ...acceptedQuestions, ...specificQuestions];
+    questions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     if (questions.length === 0) {
-      return res.status(404).json({ message: "No questions found" });
+      return res.status(200).json([]);
     }
 
     return res.status(200).json(questions);
@@ -144,26 +172,41 @@ const getMyQuestions = async (req, res) => {
   }
 };
 
-const getAssignedQuestions = async (req, res) => {
-  try {
-    const mentorId = req.userId;
-    const questions = await Question.find({ 
-      targetMentor: mentorId,
-      questionType: "specific"
-    })
-      .populate("author", "fullName email profileImage")
-      .populate("targetMentor", "fullName email profileImage domain")
-      .sort({ createdAt: -1 });
+// const getAssignedQuestions = async (req, res) => {
+//   try {
+//     const mentorId = req.userId;
+//     const questions = await Question.find({ 
+//       targetMentor: mentorId,
+//       questionType: "specific"
+//     })
+//       .populate("author", "fullName email profileImage")
+//       .populate("targetMentor", "fullName email profileImage domain")
+//       .sort({ createdAt: -1 });
 
-    if (questions.length === 0) {
-      return res.status(200).json([]);
-    }
+//     if (questions.length === 0) {
+//       return res.status(200).json([]);
+//     }
     
-    return res.status(200).json(questions);
-  } catch (error) {
-    return res.status(500).json({ message: "Error fetching assigned questions", error: error.message });
+//     return res.status(200).json(questions);
+//   } catch (error) {
+//     return res.status(500).json({ message: "Error fetching assigned questions", error: error.message });
+//   }
+// };
+
+const updateQuestionStatus=async(req,res)=>{
+  try {
+    const {status,mentorId,questionId}=req.body
+  const q=await Question.findById(questionId)
+  if(q.status=="accepted"){
+    return status(400).json({message:"this question was already accepted by another mentor"})
   }
-};
+    const chat=await Chat.create({mentor:req.userId,student:q.author,question:q._id})
+    const question=await Question.findByIdAndUpdate(questionId,{status,assignedTo:mentorId},{new:true})
+    res.status(200).json({question ,chatId:chat._id})
+  } catch (error) {
+       return res.status(500).json({ message: "Error status updating", error: error.message });
 
+  }
+}
 
-module.exports={createQuestion, getMyQuestions, getAssignedQuestions, getQuestionById, editQuestion, deleteQuestion, getAllQuestions}
+module.exports={createQuestion, getMyQuestions, getQuestionById,updateQuestionStatus, editQuestion, deleteQuestion, getAllQuestions}

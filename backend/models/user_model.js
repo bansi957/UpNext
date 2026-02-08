@@ -109,6 +109,14 @@ const userSchema=mongoose.Schema({
      studentsHelped:{
       type:Number,
       default:0
+    },
+    socketId:{
+      type:String,
+      
+    },
+    isOnline:{
+      type:Boolean,
+      default:false
     }
 
 

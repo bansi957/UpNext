@@ -2,12 +2,12 @@ import React from "react";
 import { useEffect } from "react";
 import { serverUrl } from "../App";
 import axios from "axios";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { addQuestions } from "../Redux/userSlice";
 
 function useMyQueriesById() {
     const dispatch=useDispatch()
-
+    const userData=useSelector(state=>state.user)
   useEffect(() => {
     const fetchQuery = async () => {
       try {
@@ -26,7 +26,7 @@ function useMyQueriesById() {
     };
 
     fetchQuery()
-  }, []);
+  }, [userData?._id]);
 
 }
 

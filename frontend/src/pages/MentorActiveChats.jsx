@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { addMessage, setActiveChat } from '../Redux/chatSlice';
+import { getSocket } from '../../socket';
 
 function MentorActiveChats() {
   const navigate = useNavigate();
@@ -26,7 +27,7 @@ function MentorActiveChats() {
   const activeChat = useSelector((state) => state.chat?.activeChat);
   const messages = useSelector((state) => state.chat?.messages || []);
   const chats = useSelector((state) => state.chat?.chats || []);
-  
+  const {userData}=useSelector(state=>state.user)
   // Local state
   const [allChats, setAllChats] = useState([]);
   const [filteredChats, setFilteredChats] = useState([]);
@@ -41,9 +42,10 @@ function MentorActiveChats() {
   useEffect(() => {
     const fetchChats = async () => {
       try {
-        const res = await axios.get(`${serverUrl}/api/chats/active`, {
+        const res = await axios.get(`${serverUrl}/api/chats/get-mentor-chats`, {
           withCredentials: true
         });
+        console.log(res.data)
         setAllChats(res.data || []);
         setFilteredChats(res.data || []);
         setLoading(false);
@@ -62,10 +64,23 @@ function MentorActiveChats() {
       const fetchMessages = async () => {
         try {
           const res = await axios.get(
-            `${serverUrl}/api/chats/${activeChat._id}/messages`,
+            `${serverUrl}/api/chats/${activeChat._id}`,
             { withCredentials: true }
           );
-          setCurrentMessages(res.data || []);
+          setCurrentMessages(res.data.messages || []);
+
+          // Mark all student's messages as read
+          const studentMessageIds = res.data.messages
+            ?.filter(msg => msg.senderRole === 'student' && !msg.isRead)
+            .map(msg => msg._id) || [];
+
+          if (studentMessageIds.length > 0) {
+            axios.post(
+              `${serverUrl}/api/chats/mark-read/${activeChat._id}`,
+              { messageIds: studentMessageIds },
+              { withCredentials: true }
+            ).catch(err => console.error('Error marking messages as read:', err));
+          }
         } catch (err) {
           console.error('Error fetching messages:', err);
         }
@@ -79,6 +94,17 @@ function MentorActiveChats() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [currentMessages]);
+
+  // Detect mobile view on mount and resize
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileView(window.innerWidth < 768);
+    };
+
+    handleResize(); // Check on mount
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Search chats
   useEffect(() => {
@@ -100,14 +126,15 @@ function MentorActiveChats() {
     };
 
     try {
-      await axios.post(
-        `${serverUrl}/api/chats/${activeChat._id}/messages`,
-        { text: messageInput },
+      const res=await axios.post(
+        `${serverUrl}/api/chats/send-message/${activeChat._id}`,
+        newMessage,
         { withCredentials: true }
       );
-
-      setCurrentMessages([...currentMessages, newMessage]);
-      dispatch(addMessage(newMessage));
+      console.log(res)
+      setCurrentMessages([...currentMessages,res.data]);
+      console.log(currentMessages)
+      dispatch(addMessage(res.data));
       setMessageInput('');
 
       // Update last message in chat list
@@ -125,7 +152,10 @@ function MentorActiveChats() {
 
   const handleSelectChat = (chat) => {
     dispatch(setActiveChat(chat));
-    setIsMobileView(true);
+    // Only toggle mobile view if on mobile
+    if (window.innerWidth < 768) {
+      setIsMobileView(true);
+    }
   };
 
   const handleBackToChats = () => {
@@ -146,6 +176,46 @@ function MentorActiveChats() {
     });
   };
 
+  useEffect(()=>{
+    if(!userData?._id) return;
+  
+    const socket=getSocket()
+  
+    socket.on('send-message',({messages,mentorId,chatId})=>{
+      if(mentorId==userData._id && chatId==activeChat?._id){
+        setCurrentMessages(messages)
+        
+        // Mark student's unread messages as read
+        const studentMessageIds = messages
+          ?.filter(msg => msg.senderRole === 'student' && !msg.isRead)
+          .map(msg => msg._id) || [];
+
+        if (studentMessageIds.length > 0) {
+          axios.post(
+            `${serverUrl}/api/chats/mark-read/${chatId}`,
+            { messageIds: studentMessageIds },
+            { withCredentials: true }
+          ).catch(err => console.error('Error marking messages as read:', err));
+        }
+      }
+    })
+
+    // socket.on('messages-read',({chatId, messageIds})=>{
+    //   if(chatId==activeChat?._id){
+    //     setCurrentMessages(prev => 
+    //       prev.map(msg => 
+    //         messageIds.includes(msg._id) || messageIds.includes(msg?._id.toString()) ? {...msg, isRead: true} : msg
+    //       )
+    //     )
+    //   }
+    // })
+  
+    return ()=>{
+      socket.off('send-message')
+      socket.off('messages-read')
+    }
+  },[userData?._id,activeChat,serverUrl])
+
   return (
     <>
       <NavBar />
@@ -155,7 +225,7 @@ function MentorActiveChats() {
           <div className="flex gap-4 h-full rounded-2xl overflow-hidden backdrop-blur-xl border border-purple-500/20 bg-slate-800/40">
 
             {/* Left Sidebar - Chats List */}
-            {!isMobileView && (
+            {(!isMobileView || window.innerWidth >= 768) && (
               <div className="w-full md:w-96 border-r border-slate-700/50 flex flex-col">
                 
                 {/* Header */}
@@ -183,7 +253,7 @@ function MentorActiveChats() {
                     filteredChats.map((chat) => (
                       <button
                         key={chat._id}
-                        onClick={() => handleSelectChat(chat)}
+                        onClick={() => dispatch(setActiveChat(chat))}
                         className={`w-full p-4 border-b border-slate-700/30 text-left transition-all ${
                           activeChat?._id === chat._id
                             ? 'bg-purple-600/20 border-l-4 border-l-purple-600'
@@ -191,8 +261,13 @@ function MentorActiveChats() {
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-full bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold flex-shrink-0">
-                            {chat.studentName?.charAt(0).toUpperCase()}
+                          <div className="relative w-12 h-12">
+                            <div className="w-12 h-12 rounded-full bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold flex-shrink-0">
+                              {chat.studentName?.charAt(0).toUpperCase()}
+                            </div>
+                            {chat.studentIsOnline && (
+                              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-slate-800"></div>
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-white text-sm">{chat.studentName}</p>
@@ -210,17 +285,22 @@ function MentorActiveChats() {
             )}
 
             {/* Right Side - Chat Window */}
-            {activeChat ? (
+            {activeChat && !isMobileView ? (
               <div className="hidden md:flex flex-1 flex-col">
                 {/* Chat Header */}
                 <div className="p-4 border-b border-slate-700/50 flex items-center justify-between bg-slate-800/50">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
-                      {activeChat.studentName?.charAt(0).toUpperCase()}
+                    <div className="relative w-10 h-10">
+                      <div className="w-10 h-10 rounded-full bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
+                        {activeChat.studentName?.charAt(0).toUpperCase()}
+                      </div>
+                      {activeChat.studentIsOnline && (
+                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-slate-800"></div>
+                      )}
                     </div>
                     <div>
                       <p className="font-semibold text-white">{activeChat.studentName}</p>
-                      <p className="text-xs text-slate-400">Active now</p>
+                      <p className="text-xs text-slate-400">{activeChat.studentIsOnline ? 'Active now' : 'Offline'}</p>
                     </div>
                   </div>
 
@@ -238,6 +318,12 @@ function MentorActiveChats() {
                       <MoreVertical className="w-5 h-5" />
                     </button>
                   </div>
+                </div>
+
+                {/* Question Details */}
+                <div className="px-4 py-3 bg-slate-800/30 border-b border-slate-700/50">
+                  <p className="text-xs text-slate-400 mb-1">Question</p>
+                  <p className="text-sm font-semibold text-white truncate">{activeChat.questionTitle || 'Loading...'}</p>
                 </div>
 
                 {/* Messages */}
