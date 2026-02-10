@@ -46,7 +46,7 @@ const NavBar = () => {
     { name: 'Ask Question', path: '/user/ask-question', icon: HelpCircle },
     { name: 'My Queries', path: '/user/queries', icon: FileText },
     { name: 'Messages', path: '/user/messages', icon: MessageSquare, badge: 3 },
-    { name: 'Resources', path: '/user/resources', icon: BookOpen }
+    // { name: 'Resources', path: '/user/resources', icon: BookOpen }
   ];
 const [requestslength, setRequestLength] = useState(0);
 
@@ -62,7 +62,7 @@ useEffect(() => {
   const mentorNavItems = [
     { name: 'Requests', path: '/mentor/requests', icon: FileText, badge: requestslength },
     { name: 'Active Chats', path: '/mentor/chats', icon: MessageSquare },
-    { name: 'My Rank', path: '/mentor/rank', icon: Award },
+    // { name: 'My Rank', path: '/mentor/rank', icon: Award },
     { name: 'Guidelines', path: '/mentor/guidelines', icon: BookOpen }
   ];
 

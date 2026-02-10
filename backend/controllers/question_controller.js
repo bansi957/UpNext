@@ -42,15 +42,16 @@ const getQuestionById = async (req, res) => {
     const { id } = req.params;
     const question = await Question.findById(id)
       .populate("author", "fullName email profileImage")
-      .populate("targetMentor", "fullName email profileImage domain position");
-    
+      .populate("targetMentor", "fullName email profileImage");
+
     if (!question) {
       return res.status(404).json({ message: "Question not found" });
     }
-    
+
     return res.status(200).json(question);
   } catch (error) {
-    return res.status(500).json({ message: "Error fetching question", error: error.message });
+    console.error("Error in getQuestionById:", error);
+    return res.status(500).json({ message: `Error: ${error.message || error}` });
   }
 };
 
@@ -164,53 +165,135 @@ const getMyQuestions = async (req, res) => {
     const userId = req.userId;
     const questions = await Question.find({ author: userId })
       .populate("author", "fullName email profileImage")
+      .populate("targetMentor", "fullName email profileImage")
       .sort({ createdAt: -1 });
 
-      if (!questions) {
-      return res.status(404).json({ message: "Question not found" });
+    if (!questions) {
+      return res.status(404).json({ message: "No questions found" });
     }
-    
+
     return res.status(200).json(questions);
   } catch (error) {
-    return res.status(500).json({ message: "Error fetching your questions", error: error.message });
+    console.error("Error in getMyQuestions:", error);
+    return res.status(500).json({ message: `Error: ${error.message || error}` });
   }
 };
 
-// const getAssignedQuestions = async (req, res) => {
-//   try {
-//     const mentorId = req.userId;
-//     const questions = await Question.find({ 
-//       targetMentor: mentorId,
-//       questionType: "specific"
-//     })
-//       .populate("author", "fullName email profileImage")
-//       .populate("targetMentor", "fullName email profileImage domain")
-//       .sort({ createdAt: -1 });
-
-//     if (questions.length === 0) {
-//       return res.status(200).json([]);
-//     }
-    
-//     return res.status(200).json(questions);
-//   } catch (error) {
-//     return res.status(500).json({ message: "Error fetching assigned questions", error: error.message });
-//   }
-// };
-
-const updateQuestionStatus=async(req,res)=>{
+const getMentorRequests = async (req, res) => {
   try {
-    const {status,mentorId,questionId}=req.body
-  const q=await Question.findById(questionId)
-  if(q.status=="accepted"){
-    return status(400).json({message:"this question was already accepted by another mentor"})
-  }
-    const chat=await Chat.create({mentor:req.userId,student:q.author,question:q._id})
-    const question=await Question.findByIdAndUpdate(questionId,{status,assignedTo:mentorId},{new:true})
-    res.status(200).json({question ,chatId:chat._id})
+    const mentorId = req.userId;
+
+    // Get all questions where mentor is targeted OR questions open to all mentors
+    const questions = await Question.find({
+      $or: [
+        { targetMentor: mentorId, questionType: "specific" },
+        { questionType: "all" }
+      ]
+    })
+      .populate("author", "fullName email profileImage")
+      .populate("targetMentor", "fullName email profileImage")
+      .sort({ createdAt: -1 });
+
+    if (!questions) {
+      return res.status(404).json({ message: "No questions found" });
+    }
+
+    return res.status(200).json(questions);
   } catch (error) {
-       return res.status(500).json({ message: "Error status updating", error: error.message });
-
+    console.error("Error in getMentorRequests:", error);
+    return res.status(500).json({ message: `Error: ${error.message || error}` });
   }
-}
+};
 
-module.exports={createQuestion, getMyQuestions, getQuestionById,updateQuestionStatus, editQuestion, deleteQuestion, getAllQuestions}
+const updateQuestionStatus = async (req, res) => {
+  try {
+    const { questionId, status, mentorId } = req.body;
+
+    const question = await Question.findByIdAndUpdate(
+      questionId,
+      { status, acceptedBy: mentorId },
+      { new: true }
+    ).populate("author", "fullName email profileImage isOnline socketId");
+
+    if (!question) {
+      return res.status(404).json({ message: "Question not found" });
+    }
+
+    // If status is 'accepted', create a chat
+    if (status === "accepted") {
+      const Chat = require("../models/chat_model");
+      
+      // Check if chat already exists
+      let chat = await Chat.findOne({ question: questionId });
+      
+      if (!chat) {
+        chat = new Chat({
+          mentor: mentorId,
+          student: question.author._id,
+          question: questionId,
+          status: "started",
+          messages: []
+        });
+        await chat.save();
+      }
+
+      // Populate chat with full details
+      await chat.populate("mentor", "fullName email profileImage isOnline socketId");
+      await chat.populate("student", "fullName email profileImage isOnline socketId");
+      await chat.populate("question", "title");
+
+      // Format chat data for frontend
+      const formattedChat = {
+        _id: chat._id,
+        mentor: chat.mentor,
+        student: chat.student,
+        studentName: chat.student?.fullName || "Unknown",
+        mentorName: chat.mentor?.fullName || "Unknown",
+        questionTitle: chat.question?.title || "Untitled Question",
+        status: chat.status,
+        rating: chat.rating || null,
+        ratedAt: chat.ratedAt || null,
+        studentIsOnline: chat.student?.isOnline || false,
+        mentorIsOnline: chat.mentor?.isOnline || false,
+        lastMessage: "No messages yet",
+        lastMessageTime: chat.createdAt,
+        createdAt: chat.createdAt,
+        updatedAt: chat.updatedAt,
+        messages: chat.messages || []
+      };
+
+      // Emit socket event to student to create chat in real-time
+      const io = req.app.get('io');
+      if (io && question.author?.socketId) {
+        io.to(question.author.socketId).emit('new-chat', { chat: formattedChat });
+      }
+
+      return res.status(200).json({
+        message: "Question accepted and chat created",
+        question,
+        chatId: chat._id,
+        chat: formattedChat
+      });
+    }
+
+    return res.status(200).json({
+      message: "Question status updated",
+      question
+    });
+  } catch (error) {
+    console.error("Error in updateQuestionStatus:", error);
+    return res.status(500).json({ message: `Error: ${error.message || error}` });
+  }
+};
+
+module.exports = { 
+  getAllQuestions, 
+  createQuestion, 
+  getQuestionById,
+  updateQuestionStatus,
+  getMentorRequests,
+  getMyQuestions,
+  editQuestion,
+  deleteQuestion
+};
+

@@ -50,30 +50,24 @@ function MyRequests() {
       prev.map((r) => (r._id === reqId ? { ...r, status: "accepted" } : r)),
     );
     try {
-      const res=await axios.put(
+      const res = await axios.put(
         `${serverUrl}/api/questions/update-status`,
-        {status:"accepted",mentorId:userData._id,questionId:reqId},
+        { status: "accepted", mentorId: userData._id, questionId: reqId },
         { withCredentials: true },
       );
       
-      // Get the chat details before navigating
-      if(res.data.chatId) {
-        try {
-          const chatRes = await axios.get(
-            `${serverUrl}/api/chats/${res.data.chatId}`,
-            { withCredentials: true }
-          );
-          // Set the active chat in Redux
-          dispatch(setActiveChat(chatRes.data));
-        } catch(chatErr) {
-          console.error("Error fetching chat details:", chatErr);
-        }
+      // Set the active chat from response
+      if (res.data.chat) {
+        dispatch(setActiveChat(res.data.chat));
       }
       
-      // Navigate to active chats
-      navigate(`/mentor/chats`)
+      // Navigate to mentor chats
+      navigate(`/mentor/chats`);
     } catch (err) {
-      console.warn("Accept request failed (dev):", err?.message || err);
+      console.warn("Accept request failed:", err?.message || err);
+      setRequests((prev) =>
+        prev.map((r) => (r._id === reqId ? { ...r, status: "pending" } : r)),
+      );
     }
   };
   const handleChat=async (questionId)=>{
