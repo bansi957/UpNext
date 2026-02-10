@@ -6,6 +6,7 @@ const userSlice  = createSlice({
     userData:null,
     mentors:[],
     questions:[],
+    requests:[],
     activeChats:[],
     unreadMessages:0
   },
@@ -34,12 +35,18 @@ setActiveChats(state, action) {
 },
 setUnreadMessages(state, action) {
   state.unreadMessages = action.payload;
-}
-  
+},
+  setRequests(state,action){
+    state.requests=action.payload
+  },
+  addRequest(state,action){
+      state.requests.unshift(action.payload)
+    },
+
   }   
   
   
 })
 
-export const {addUserData,addMentors,addQuestions,addQuestion,deleteQuestion,setActiveChats,setUnreadMessages} = userSlice.actions;
+export const {addRequest,setRequests,addUserData,addMentors,addQuestions,addQuestion,deleteQuestion,setActiveChats,setUnreadMessages} = userSlice.actions;
 export default userSlice.reducer;

@@ -249,4 +249,32 @@ const markMessagesAsRead = async (req, res) => {
     }
 }
 
-module.exports={getMentorChats,getStudentChats,getChatById,getChatByQuestionId,createChat,markMessagesAsRead}
+const completeChat = async (req, res) => {
+  try {
+    const chat = await Chat.findByIdAndUpdate(
+      req.params.chatId,
+      { status: 'completed' },
+      { new: true }
+    )
+
+    if (!chat) {
+      return res.status(404).json({ message: 'Chat not found' })
+    }
+
+    // notify both users via socket
+    const io = req.app.get('io')
+if (chat.student?.socketId) {
+  io.to(chat.student.socketId).emit('chat-completed', { chatId: chat._id })
+}
+if (chat.mentor?.socketId) {
+  io.to(chat.mentor.socketId).emit('chat-completed', { chatId: chat._id })
+}
+
+    res.status(200).json(chat)
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to complete chat' })
+  }
+}
+
+
+module.exports={completeChat,getMentorChats,getStudentChats,getChatById,getChatByQuestionId,createChat,markMessagesAsRead}

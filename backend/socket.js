@@ -7,21 +7,15 @@ const socketHandler=(io)=>{
             try {
                 console.log(socket)
                 const user=await User.findByIdAndUpdate(userId,{socketId:socket.id,isOnline:true},{new:true})
-
+                if(io){
+                    io.emit("isOnline",{userId:user?._id})
+                }
             } catch (error) {
                 console.log(error)
             }
         })
 
-        socket.on("disconnect",async ()=>{
-            try {
-                const user=await User.findOneAndUpdate({socketId:socket.id},{socketId:null,isOnline:false},{new:true})
-
-            } catch (error) {
-                console.log(error)
-            }
-        })
-
+       
         // Mark message as read
         socket.on("mark-message-read", async ({chatId, messageIds}) => {
             try {
@@ -42,6 +36,28 @@ const socketHandler=(io)=>{
                 console.log("Error marking message as read:", error);
             }
         });
+
+         socket.on("disconnect",async ()=>{
+            try {
+                const user=await User.findOneAndUpdate({socketId:socket.id},{socketId:null,isOnline:false},{new:true})
+
+            } catch (error) {
+                console.log(error)
+            }
+        })
+
+
+ socket.on("disconnect",async ()=>{
+            try {
+                const user=await User.findOneAndUpdate({socketId:socket.id},{socketId:null,isOnline:false},{new:true})
+                if(io){
+                    io.emit("isOffline",{userId:user?._id})
+                }
+            } catch (error) {
+                console.log(error)
+            }
+        })
+
     })
 }
 

@@ -17,6 +17,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { setActiveChat } from '../Redux/chatSlice';
 import { getSocket } from '../../socket';
+import { setActiveChats } from '../Redux/userSlice';
 
 function UserMessages() {
   const navigate = useNavigate();
@@ -42,8 +43,11 @@ function UserMessages() {
         const res = await axios.get(`${serverUrl}/api/chats/get-student-chats`, {
           withCredentials: true
         });
-        setAllChats(res.data || []);
-        setFilteredChats(res.data || []);
+const sortedChats = [...res.data].sort(
+  (a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime)
+);
+        setAllChats(sortedChats || []);
+        setFilteredChats(sortedChats || []);
         setLoading(false);
       } catch (err) {
         console.error('Error fetching chats:', err);
@@ -63,7 +67,8 @@ useEffect(()=>{
   socket.on('send-message',({messages,studentId,chatId})=>{
     if(studentId==userData._id && chatId==activeChat?._id){
       setCurrentMessages(messages)
-      
+     
+
       // Mark mentor's unread messages as read
       const mentorMessageIds = messages
         ?.filter(msg => msg.senderRole === 'mentor' && !msg.isRead)
@@ -77,7 +82,74 @@ useEffect(()=>{
         ).catch(err => console.error('Error marking messages as read:', err));
       }
     }
+
+     if(studentId==userData?._id){
+        const fchats=allChats.find(c=>c._id==chatId)
+         const schats=allChats.filter(c=>c._id!==chatId)
+      setAllChats([fchats,...schats])
+       setAllChats((prev) =>
+        prev.map((chat) =>
+          chat._id == chatId
+            ? { ...chat, lastMessage:messages[messages.length-1].content||"bansi", lastMessageTime: new Date() }
+            : chat
+        )
+      );
+
+      }
+
   })
+
+socket.on('isOnline', ({ userId }) => {
+  setAllChats(prev =>
+    prev.map(chat =>
+      chat.mentor?._id === userId
+        ? { ...chat, mentorIsOnline: true }
+        : chat
+    )
+  )
+
+  // also update activeChat if open
+  if (activeChat?.mentor?._id === userId) {
+    dispatch(setActiveChat({ ...activeChat, mentorIsOnline: true }))
+  }
+})
+
+
+socket.on('isOffline', ({ userId }) => {
+  setAllChats(prev =>
+    prev.map(chat =>
+      chat.mentor?._id === userId
+        ? { ...chat, mentorIsOnline: false }
+        : chat
+    )
+  )
+
+  // also update activeChat if open
+  if (activeChat?.mentor?._id === userId) {
+    dispatch(setActiveChat({ ...activeChat, mentorIsOnline: false }))
+  }
+})
+
+
+
+socket.on('chat-completed', ({ chatId }) => {
+  setAllChats(prev =>
+    prev.map(chat =>
+      chat._id === chatId
+        ? { ...chat, status: 'completed' }
+        : chat
+    )
+  )
+
+  if (activeChat?._id === chatId) {
+dispatch(setActiveChat(prev =>
+  prev?._id === chatId
+    ? { ...prev, status: 'completed' }
+    : prev
+))
+  }
+})
+
 
   // socket.on('messages-read',({chatId, messageIds})=>{
   //   if(chatId==activeChat?._id){
@@ -91,7 +163,10 @@ useEffect(()=>{
 
   return ()=>{
     socket.off('send-message')
-    socket.off('messages-read')
+    socket.off('isOnline')
+    socket.off('isOffine')
+    socket.off('chat-completed')
+
   }
 },[userData?._id,activeChat,serverUrl])
 
@@ -159,7 +234,8 @@ useEffect(()=>{
 
       setCurrentMessages([...currentMessages,res.data]);
       setMessageInput('');
-
+      const schats=allChats.filter(c=>c._id!==activeChat._id)
+      setAllChats([activeChat,...schats])
       setAllChats((prev) =>
         prev.map((chat) =>
           chat._id === activeChat._id
@@ -190,6 +266,8 @@ useEffect(()=>{
       minute: '2-digit'
     });
   };
+const showRating =
+  activeChat?.status === 'completed'
 
   return (
     <>
@@ -207,7 +285,7 @@ useEffect(()=>{
                 <div className="p-4 border-b border-slate-700/50">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-2xl font-bold text-white">Messages</h2>
-                    <Bell className="w-5 h-5 text-slate-400 cursor-pointer hover:text-white" />
+                    {/* <Bell className="w-5 h-5 text-slate-400 cursor-pointer hover:text-white" /> */}
                   </div>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
@@ -281,7 +359,7 @@ useEffect(()=>{
                     </div>
                     <div>
                       <p className="font-semibold text-white">{activeChat.mentorName}</p>
-                      <p className="text-xs text-slate-400">Mentor</p>
+                      {activeChat.mentorIsOnline?<p className="text-xs text-slate-400">Active now</p>:<p className="text-xs text-slate-400">Offline</p>}
                     </div>
                   </div>
 
@@ -306,31 +384,49 @@ useEffect(()=>{
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Input */}
-                <div className="p-4 border-t border-slate-700/50 bg-slate-800/50">
-                  <div className="flex items-center gap-3">
-                    <button className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400">
-                      <Paperclip className="w-5 h-5" />
-                    </button>
-                    <input
-                      type="text"
-                      value={messageInput}
-                      onChange={(e) => setMessageInput(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                      placeholder="Type a message..."
-                      className="flex-1 px-4 py-2 rounded-xl bg-slate-700/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-                    />
-                    <button className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400">
-                      <Smile className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={handleSendMessage}
-                      className="p-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-all"
-                    >
-                      <Send className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
+                {/* ⭐ RATING SECTION */}
+  {showRating ? (
+    <div className="text-center">
+      <p className="text-sm text-white mb-2">
+        Rate your mentor
+      </p>
+
+      <div className="flex justify-center gap-2">
+        {[1,2,3,4,5].map(star => (
+          <button
+            key={star}
+            onClick={() => handleRateMentor(star)}
+            className="text-yellow-400 text-2xl hover:scale-110 transition"
+          >
+            ★
+          </button>
+        ))}
+      </div>
+
+      <p className="text-xs text-slate-400 mt-2">
+        This chat has been completed
+      </p>
+    </div>
+  ) : (
+    /* 💬 NORMAL INPUT */
+    <div className="flex items-center gap-3">
+      <input
+        type="text"
+        value={messageInput}
+        onChange={(e) => setMessageInput(e.target.value)}
+        onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+        placeholder="Type a message..."
+        className="flex-1 px-4 py-2 rounded-xl bg-slate-700/50 text-white"
+      />
+
+      <button
+        onClick={handleSendMessage}
+        className="p-2 rounded-lg bg-purple-600 text-white"
+      >
+        <Send className="w-5 h-5" />
+      </button>
+    </div>
+  )}
               </div>
             ) : (
               <div className="hidden md:flex flex-1 flex-col items-center justify-center text-slate-400">
@@ -354,6 +450,12 @@ useEffect(()=>{
                   </button>
                 </div>
 
+                {/* Question Details */}
+                <div className="px-4 py-3 bg-slate-800/30 border-b border-slate-700/50">
+                  <p className="text-xs text-slate-400 mb-1">Question</p>
+                  <p className="text-sm font-semibold text-white truncate">{activeChat.questionTitle || 'Loading...'}</p>
+                </div>
+
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
                   {currentMessages.map((msg, idx) => (
                     <ChatMessage key={idx} message={msg} />
@@ -361,15 +463,19 @@ useEffect(()=>{
                   <div ref={messagesEndRef} />
                 </div>
 
-                <div className="p-4 border-t border-slate-700/50 bg-slate-800/50">
+                {/* <div className="p-4 border-t border-slate-700/50 bg-slate-800/50">
                   <div className="flex items-center gap-2">
                     <input
                       type="text"
                       value={messageInput}
                       onChange={(e) => setMessageInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                      placeholder="Message..."
-                      className="flex-1 px-4 py-2 rounded-xl bg-slate-700/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+  disabled={activeChat?.status === 'completed'}
+  placeholder={
+    activeChat?.status === 'completed'
+      ? 'Chat completed. Please rate mentor.'
+      : 'Type a message...'
+  }                   className="flex-1 px-4 py-2 rounded-xl bg-slate-700/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                     />
                     <button
                       onClick={handleSendMessage}
@@ -378,7 +484,55 @@ useEffect(()=>{
                       <Send className="w-5 h-5" />
                     </button>
                   </div>
-                </div>
+                </div> */}
+
+                <div className="p-4 border-t border-slate-700/50 bg-slate-800/50">
+
+  {/* ⭐ RATING SECTION */}
+  {showRating ? (
+    <div className="text-center">
+      <p className="text-sm text-white mb-2">
+        Rate your mentor
+      </p>
+
+      <div className="flex justify-center gap-2">
+        {[1,2,3,4,5].map(star => (
+          <button
+            key={star}
+            onClick={() => handleRateMentor(star)}
+            className="text-yellow-400 text-2xl hover:scale-110 transition"
+          >
+            ★
+          </button>
+        ))}
+      </div>
+
+      <p className="text-xs text-slate-400 mt-2">
+        This chat has been completed
+      </p>
+    </div>
+  ) : (
+    /* 💬 NORMAL INPUT */
+    <div className="flex items-center gap-3">
+      <input
+        type="text"
+        value={messageInput}
+        onChange={(e) => setMessageInput(e.target.value)}
+        onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+        placeholder="Type a message..."
+        className="flex-1 px-4 py-2 rounded-xl bg-slate-700/50 text-white"
+      />
+
+      <button
+        onClick={handleSendMessage}
+        className="p-2 rounded-lg bg-purple-600 text-white"
+      >
+        <Send className="w-5 h-5" />
+      </button>
+    </div>
+  )}
+</div>
+
               </div>
             )}
           </div>

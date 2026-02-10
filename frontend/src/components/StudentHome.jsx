@@ -243,7 +243,7 @@ function StudentHome() {
               {/* Primary CTA */}
               <button 
                 onClick={() => {
-                  if (userData?.profileCompletion === 100) navigate('/user/ask-question');
+                  if (userData?.profileCompletion >=75) navigate('/user/ask-question');
                   else {
                     alert('Please complete your profile to ask questions');
                     navigate('/profile');

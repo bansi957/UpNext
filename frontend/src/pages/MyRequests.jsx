@@ -6,6 +6,7 @@ import { serverUrl } from "../App";
 import { Send, Clock, FileText, CheckCircle, Eye, User, MessageCircle } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { setActiveChat } from "../Redux/chatSlice";
+import { getSocket } from "../../socket";
 
 function MyRequests() {
   const navigate = useNavigate();
@@ -89,6 +90,27 @@ function MyRequests() {
   const filtered = requests.filter((r) =>
     filter === "all" ? true : (r.status === filter || r.questionType==filter),
   );
+
+
+   useEffect(()=>{
+    if(!userData._id) return
+    const socket=getSocket()
+        socket.on('send-request',({question})=>{
+            if(question.questionType=="specific"){
+              if(userData._id==question.targetMentor){
+                  setRequests(prev=>[question,...prev])
+              }
+            }
+            if(question.questionType=="all"){
+                setRequests(prev=>[question,...prev])
+
+            }
+        })
+
+        return ()=>{
+          socket.off("send-request")
+        }
+  },[userData._id])
 
   return (
     <>

@@ -26,6 +26,10 @@ const createQuestion=async (req,res)=>{
             formdata.attachment=imageUrl
         }
         const question=await Question.create(formdata)
+        const io=req.app.get('io')
+        if(io){
+          io.emit('send-request',{question})
+        }
         return res.status(200).json({message:"successfully question posted",question})
     } catch (error) {
         return res.status(500).json(error)

@@ -136,7 +136,8 @@ function MentorActiveChats() {
       console.log(currentMessages)
       dispatch(addMessage(res.data));
       setMessageInput('');
-
+      const schats=allChats.filter(c=>c._id!==activeChat._id)
+      setAllChats([activeChat,...schats])
       // Update last message in chat list
       setAllChats((prev) =>
         prev.map((chat) =>
@@ -198,7 +199,74 @@ function MentorActiveChats() {
           ).catch(err => console.error('Error marking messages as read:', err));
         }
       }
+
+      
+     if(mentorId==userData?._id){
+        const fchats=allChats.find(c=>c._id==chatId)
+         const schats=allChats.filter(c=>c._id!==chatId)
+      setAllChats([fchats,...schats])
+       setAllChats((prev) =>
+        prev.map((chat) =>
+          chat._id == chatId
+            ? { ...chat, lastMessage:messages[messages.length-1].content||"bansi", lastMessageTime: new Date() }
+            : chat
+        )
+      );
+
+      }
     })
+    socket.on('isOnline', ({ userId }) => {
+      setAllChats(prev =>
+        prev.map(chat =>
+          chat.student?._id === userId
+            ? { ...chat, studentIsOnline: true }
+            : chat
+        )
+      )
+    
+      // also update activeChat if open
+      if (activeChat?.student?._id === userId) {
+        dispatch(setActiveChat({ ...activeChat, studentIsOnline: true }))
+      }
+    })
+    socket.on('isOffline', ({ userId }) => {
+  setAllChats(prev =>
+    prev.map(chat =>
+      chat.student?._id === userId
+        ? { ...chat, studentIsOnline: false }
+        : chat
+    )
+  )
+      if (activeChat?.student?._id === userId) {
+        dispatch(setActiveChat({ ...activeChat, studentIsOnline: false }))
+      }
+})
+
+socket.on('chat-completed', ({ chatId }) => {
+  // update left-side chat list
+  setAllChats(prev =>
+    prev.map(chat =>
+      chat._id === chatId
+        ? {
+            ...chat,
+            status: 'completed',
+            studentIsOnline: false // 🔥 FORCE OFF
+          }
+        : chat
+    )
+  )
+
+  // update right-side active chat
+if (activeChat?._id === chatId) {
+  dispatch(setActiveChat({
+    ...activeChat,
+    status: 'completed',
+    studentIsOnline: false
+  }))
+}
+
+})
+
 
     // socket.on('messages-read',({chatId, messageIds})=>{
     //   if(chatId==activeChat?._id){
@@ -212,9 +280,42 @@ function MentorActiveChats() {
   
     return ()=>{
       socket.off('send-message')
-      socket.off('messages-read')
+      socket.off('isOnline')
+      socket.off('isOffline')
+      socket.off('chat-completed')
     }
   },[userData?._id,activeChat,serverUrl])
+
+  useEffect(() => {
+  if (window.innerWidth < 768) {
+    setIsMobileView(false); // always show chat list first
+  }
+}, [])
+
+const handleCompleteChat = async () => {
+  if (!activeChat?._id) return
+
+  try {
+    const res = await axios.post(
+      `${serverUrl}/api/chats/complete/${activeChat._id}`,
+      {},
+      { withCredentials: true }
+    )
+
+    // update active chat
+    // dispatch(setActiveChat(res.data))
+
+    // // update chat list
+    // setAllChats(prev =>
+    //   prev.map(chat =>
+    //     chat._id === res.data._id ? res.data : chat
+    //   )
+    // )
+  } catch (err) {
+    console.error('Failed to complete chat', err)
+  }
+}
+
 
   return (
     <>
@@ -225,7 +326,7 @@ function MentorActiveChats() {
           <div className="flex gap-4 h-full rounded-2xl overflow-hidden backdrop-blur-xl border border-purple-500/20 bg-slate-800/40">
 
             {/* Left Sidebar - Chats List */}
-            {(!isMobileView || window.innerWidth >= 768) && (
+            {(!isMobileView) && (
               <div className="w-full md:w-96 border-r border-slate-700/50 flex flex-col">
                 
                 {/* Header */}
@@ -265,9 +366,10 @@ function MentorActiveChats() {
                             <div className="w-12 h-12 rounded-full bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold flex-shrink-0">
                               {chat.studentName?.charAt(0).toUpperCase()}
                             </div>
-                            {chat.studentIsOnline && (
-                              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-slate-800"></div>
-                            )}
+                           {chat.studentIsOnline && chat.status !== 'completed' && (
+  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-slate-800"></div>
+)}
+
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-white text-sm">{chat.studentName}</p>
@@ -294,26 +396,32 @@ function MentorActiveChats() {
                       <div className="w-10 h-10 rounded-full bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
                         {activeChat.studentName?.charAt(0).toUpperCase()}
                       </div>
-                      {activeChat.studentIsOnline && (
-                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-slate-800"></div>
-                      )}
+                      {activeChat.studentIsOnline && activeChat.status !== 'completed' && (
+  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-slate-800"></div>
+)}
+
                     </div>
                     <div>
                       <p className="font-semibold text-white">{activeChat.studentName}</p>
-                      <p className="text-xs text-slate-400">{activeChat.studentIsOnline ? 'Active now' : 'Offline'}</p>
+<p className="text-xs text-slate-400">
+  {activeChat.status === 'completed'
+    ? 'Chat completed'
+    : activeChat.studentIsOnline
+      ? 'Active now'
+      : 'Offline'}
+</p>
                     </div>
                   </div>
-
+     {activeChat?.status !== 'completed' && (
+  <button
+    onClick={handleCompleteChat}
+    className="px-3 py-1 text-xs rounded-lg bg-red-500 hover:bg-red-600 text-white"
+  >
+    Complete
+  </button>
+)}
                   <div className="flex items-center gap-3">
-                    <button className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400">
-                      <Phone className="w-5 h-5" />
-                    </button>
-                    <button className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400">
-                      <Video className="w-5 h-5" />
-                    </button>
-                    <button className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400">
-                      <Info className="w-5 h-5" />
-                    </button>
+                   
                     <button className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400">
                       <MoreVertical className="w-5 h-5" />
                     </button>
@@ -345,12 +453,16 @@ function MentorActiveChats() {
                       value={messageInput}
                       onChange={(e) => setMessageInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                      placeholder="Type a message..."
-                      className="flex-1 px-4 py-2 rounded-xl bg-slate-700/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+ disabled={activeChat?.status === 'completed'}
+  placeholder={
+    activeChat?.status === 'completed'
+      ? 'Chat completed'
+      : 'Type a message...'
+  }                      className="flex-1 px-4 py-2 rounded-xl bg-slate-700/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                     />
-                    <button className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400">
+                    {/* <button className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400">
                       <Smile className="w-5 h-5" />
-                    </button>
+                    </button> */}
                     <button
                       onClick={handleSendMessage}
                       className="p-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-all"
@@ -382,6 +494,12 @@ function MentorActiveChats() {
                   </button>
                 </div>
 
+                {/* Question Details */}
+                <div className="px-4 py-3 bg-slate-800/30 border-b border-slate-700/50">
+                  <p className="text-xs text-slate-400 mb-1">Question</p>
+                  <p className="text-sm font-semibold text-white truncate">{activeChat.questionTitle || 'Loading...'}</p>
+                </div>
+
                 {/* Mobile Messages */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
                   {currentMessages.map((msg, idx) => (
@@ -398,8 +516,12 @@ function MentorActiveChats() {
                       value={messageInput}
                       onChange={(e) => setMessageInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                      placeholder="Message..."
-                      className="flex-1 px-4 py-2 rounded-xl bg-slate-700/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+ disabled={activeChat?.status === 'completed'}
+  placeholder={
+    activeChat?.status === 'completed'
+      ? 'Chat completed'
+      : 'Type a message...'
+  }                      className="flex-1 px-4 py-2 rounded-xl bg-slate-700/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                     />
                     <button
                       onClick={handleSendMessage}

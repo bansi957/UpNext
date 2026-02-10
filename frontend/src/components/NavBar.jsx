@@ -19,7 +19,7 @@ const NavBar = () => {
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
   
-  const userData = useSelector((state) => state.user?.userData);
+  const {userData,requests} = useSelector((state) => state.user);
   const role = userData?.role;
   const dispatch = useDispatch();
 
@@ -48,9 +48,19 @@ const NavBar = () => {
     { name: 'Messages', path: '/user/messages', icon: MessageSquare, badge: 3 },
     { name: 'Resources', path: '/user/resources', icon: BookOpen }
   ];
+const [requestslength, setRequestLength] = useState(0);
+
+useEffect(() => {
+  const count = requests?.filter(
+    (e) => e.status === "pending"
+  ).length || 0;
+
+  setRequestLength(count);
+}, [requests]);
+
 
   const mentorNavItems = [
-    { name: 'Requests', path: '/mentor/requests', icon: FileText, badge: 5 },
+    { name: 'Requests', path: '/mentor/requests', icon: FileText, badge: requestslength },
     { name: 'Active Chats', path: '/mentor/chats', icon: MessageSquare },
     { name: 'My Rank', path: '/mentor/rank', icon: Award },
     { name: 'Guidelines', path: '/mentor/guidelines', icon: BookOpen }

@@ -18,6 +18,8 @@ import {
   Eye
 } from 'lucide-react';
 import NavBar from './NavBar';
+import { getSocket } from '../../socket';
+import { addRequest } from '../Redux/userSlice';
 
 function MentorHome() {
   const { userData } = useSelector(state => state.user);
@@ -29,9 +31,9 @@ function MentorHome() {
   const [activeChats, setActiveChats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState([
-    { icon: Send, label: 'Pending Requests', value: '0', color: 'from-purple-500 to-pink-500' },
-    { icon: MessageCircle, label: 'Active Chats', value: '0', color: 'from-blue-500 to-cyan-500' },
-    { icon: Star, label: 'Your Rating', value: '0', color: 'from-yellow-500 to-orange-500' }
+    { icon: Send, label: 'Pending Requests',to:"/mentor/requests" ,value: '0', color: 'from-purple-500 to-pink-500' },
+    { icon: MessageCircle, label: 'Active Chats',to:"/mentor/chats", value: '0', color: 'from-blue-500 to-cyan-500' },
+    { icon: Star, label: 'Your Rating', value: '0',to:"/mentor/rating", color: 'from-yellow-500 to-orange-500' }
   ]);
 
   // Dynamic greeting based on time
@@ -63,9 +65,9 @@ function MentorHome() {
 
         // Update stats
         setStats([
-          { icon: Send, label: 'Pending Requests', value: requests.filter(r => r.status === 'pending').length.toString(), color: 'from-purple-500 to-pink-500' },
-          { icon: MessageCircle, label: 'Active Chats', value: chats.length.toString(), color: 'from-blue-500 to-cyan-500' },
-          { icon: Star, label: 'Your Rating', value: userData?.rating ? userData.rating.toFixed(1) : '0', color: 'from-yellow-500 to-orange-500' }
+          { icon: Send, label: 'Pending Requests',to:"/mentor/requests",value: requests.filter(r => r.status === 'pending').length.toString(), color: 'from-purple-500 to-pink-500' },
+          { icon: MessageCircle, label: 'Active Chats',to:"/mentor/chats", value: chats.length.toString(), color: 'from-blue-500 to-cyan-500' },
+          { icon: Star, label: 'Your Rating',to:"/mentor/rating", value: userData?.rating ? userData.rating.toFixed(1) : '0', color: 'from-yellow-500 to-orange-500' }
         ]);
 
         setLoading(false);
@@ -91,6 +93,27 @@ function MentorHome() {
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
+
+  
+     useEffect(()=>{
+      if(!userData._id) return
+      const socket=getSocket()
+          socket.on('send-request',({question})=>{
+              if(question.questionType=="specific"){
+                if(userData._id==question.targetMentor){
+                    dispatch(addRequest(question))
+                }
+              }
+              if(question.questionType=="all"){
+                    dispatch(addRequest(question))
+  
+              }
+          })
+  
+          return ()=>{
+            socket.off("send-request")
+          }
+    },[userData._id])
 
   // If user exists and profile completion is below threshold, show minimal view only
   const incomplete = userData && (userData.profileCompletion ?? 0) < 75;
@@ -261,6 +284,7 @@ function MentorHome() {
                 return (
                   <div
                     key={index}
+                    onClick={()=>navigate(stat.to)}
                     className="group relative bg-slate-800/40 backdrop-blur-xl rounded-2xl p-6 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/20 overflow-hidden"
                     style={{ animationDelay: `${index * 100}ms` }}
                   >
