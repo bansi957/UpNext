@@ -43,6 +43,7 @@ function UserMessages() {
   const [uploading, setUploading] = useState(false);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+  const [showRatingPrompt, setShowRatingPrompt] = useState(false);
   const {userData}=useSelector(state=>state.user)
 
   // Fetch active chats with mentors
@@ -133,6 +134,17 @@ function UserMessages() {
     })
 
     socket.on('chat-completed', ({ chatId }) => {
+      // When mentor completes chat, show rating prompt instead of moving to completed
+      if (activeChat?._id === chatId) {
+        setShowRatingPrompt(true);
+        dispatch(setActiveChat(prev =>
+          prev?._id === chatId
+            ? { ...prev, status: 'completed' }
+            : prev
+        ))
+      }
+      
+      // Update chat list but keep in active until rated
       setAllChats(prev =>
         prev.map(chat =>
           chat._id === chatId
@@ -140,17 +152,10 @@ function UserMessages() {
             : chat
         )
       )
-
-      if (activeChat?._id === chatId) {
-        dispatch(setActiveChat(prev =>
-          prev?._id === chatId
-            ? { ...prev, status: 'completed' }
-            : prev
-        ))
-      }
     })
 
     socket.on('rating-received', ({ chatId, rating }) => {
+      // After rating, move to completed section
       setAllChats(prev =>
         prev.map(chat =>
           chat._id === chatId
@@ -160,6 +165,9 @@ function UserMessages() {
       )
 
       if (activeChat?._id === chatId) {
+        setShowRatingPrompt(false);
+        setHasRated(true);
+        setRating(rating);
         dispatch(setActiveChat({
           ...activeChat,
           rating: rating
@@ -258,9 +266,11 @@ function UserMessages() {
 
     // Filter by tab
     if (chatTab === 'active') {
-      filtered = filtered.filter(chat => chat?.status !== 'completed');
+      // Active tab shows: not completed OR completed but not rated yet
+      filtered = filtered.filter(chat => chat?.status !== 'completed' || (chat?.status === 'completed' && !chat?.rating));
     } else {
-      filtered = filtered.filter(chat => chat?.status === 'completed');
+      // Completed tab shows: completed AND rated
+      filtered = filtered.filter(chat => chat?.status === 'completed' && chat?.rating);
     }
 
     setFilteredChats(filtered);
@@ -376,6 +386,7 @@ function UserMessages() {
       if (res.data.rating) {
         setRating(stars);
         setHasRated(true);
+        setShowRatingPrompt(false);
         
         dispatch(setActiveChat({ ...activeChat, rating: stars }));
         
@@ -392,10 +403,11 @@ function UserMessages() {
     }
   };
 
-  const showRating = activeChat?.status === 'completed' && !hasRated && !activeChat?.rating;
+  // Show rating prompt when mentor completes chat OR when naturally completed without rating
+  const showRating = (activeChat?.status === 'completed' && !hasRated && !activeChat?.rating) || showRatingPrompt;
 
-  const activeChatCount = allChats?.filter(c => c?.status !== 'completed').length || 0;
-  const completedChatCount = allChats?.filter(c => c?.status === 'completed').length || 0;
+  const activeChatCount = allChats?.filter(c => c?.status !== 'completed' || (c?.status === 'completed' && !c?.rating)).length || 0;
+  const completedChatCount = allChats?.filter(c => c?.status === 'completed' && c?.rating).length || 0;
 
   return (
     <>
@@ -474,11 +486,15 @@ function UserMessages() {
                           <div className="flex items-center gap-3">
                             <div className="relative w-12 h-12">
                               <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0 ${
-                                chat?.status === 'completed'
+                                chat?.status === 'completed' && chat?.rating
                                   ? 'bg-emerald-600/60'
-                                  : 'bg-linear-to-br from-purple-500 to-pink-500'
+                                  : chat?.status === 'completed' && !chat?.rating
+                                    ? 'bg-orange-600/60'
+                                    : 'bg-linear-to-br from-purple-500 to-pink-500'
                               }`}>
-                                {chat?.status === 'completed' ? '✓' : chat?.mentorName?.charAt(0).toUpperCase()}
+                                {chat?.status === 'completed' && chat?.rating ? '✓' : 
+                                 chat?.status === 'completed' && !chat?.rating ? '⭐' :
+                                 chat?.mentorName?.charAt(0).toUpperCase()}
                               </div>
                               {chat?.mentorIsOnline && chat?.status !== 'completed' && (
                                 <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-slate-800"></div>
@@ -487,16 +503,23 @@ function UserMessages() {
                             <div className="flex-1 min-w-0">
                               <p className="font-semibold text-white text-sm">{chat?.mentorName || 'Unknown'}</p>
                               <p className={`text-xs truncate ${
-                                chat?.status === 'completed'
+                                chat?.status === 'completed' && chat?.rating
                                   ? 'text-emerald-400'
-                                  : 'text-slate-400'
+                                  : chat?.status === 'completed' && !chat?.rating
+                                    ? 'text-orange-400'
+                                    : 'text-slate-400'
                               }`}>
-                                {chat?.lastMessage || 'No messages yet'}
+                                {chat?.status === 'completed' && !chat?.rating 
+                                  ? 'Please rate this mentor'
+                                  : chat?.lastMessage || 'No messages yet'}
                               </p>
                             </div>
                             <div className="flex flex-col items-end gap-1">
-                              {chat?.status === 'completed' && (
+                              {chat?.status === 'completed' && chat?.rating && (
                                 <span className="text-xs font-semibold text-emerald-400">Done</span>
+                              )}
+                              {chat?.status === 'completed' && !chat?.rating && (
+                                <span className="text-xs font-semibold text-orange-400">Rate</span>
                               )}
                               {chat?.rating && (
                                 <span className="text-xs text-yellow-400 font-semibold">{chat.rating}★</span>
@@ -560,11 +583,13 @@ function UserMessages() {
 
                 {/* Input or Rating Section */}
                 {showRating ? (
-                  <div className="p-6 border-t border-emerald-600/20 bg-gradient-to-r from-emerald-600/5 to-emerald-600/5">
+                  <div className="p-6 border-t border-orange-600/20 bg-gradient-to-r from-orange-600/5 to-orange-600/5">
                     <div className="text-center space-y-4">
                       <div>
-                        <p className="text-emerald-100 font-semibold mb-1">Problem solved?</p>
-                        <p className="text-xs text-emerald-400/80">Rate your mentor's guidance</p>
+                        <p className="text-orange-100 font-semibold mb-1">
+                          {showRatingPrompt ? 'Mentor closed the chat' : 'Problem solved?'}
+                        </p>
+                        <p className="text-xs text-orange-400/80">Please rate your mentor</p>
                       </div>
                       
                       <div className="flex justify-center gap-4">
@@ -576,7 +601,7 @@ function UserMessages() {
                               star <= rating
                                 ? 'text-yellow-400'
                                 : 'text-slate-400'
-                            }`}
+                            } hover:text-yellow-300 transition-colors`}
                           >
                             <Star className="w-6 h-6 fill-current" />
                           </button>
@@ -584,37 +609,34 @@ function UserMessages() {
                       </div>
 
                       {rating > 0 && (
-                        <p className="text-xs text-emerald-300">
+                        <p className="text-xs text-orange-300">
                           Rated {rating} star{rating !== 1 ? 's' : ''}
                         </p>
                       )}
                     </div>
                   </div>
-                ) : activeChat?.status === 'completed' ? (
+                ) : activeChat?.status === 'completed' && activeChat?.rating ? (
                   <div className="p-6 border-t border-emerald-600/20 bg-gradient-to-r from-emerald-600/5 to-emerald-600/5">
                     <div className="text-center space-y-2">
-                      <div className="flex justify-center mb-2">
-                        <div className="w-10 h-10 rounded-full bg-emerald-600/20 flex items-center justify-center">
-                          <span className="text-lg text-emerald-400">✓</span>
+                      <div className="flex justify-center">
+                        <div className="w-8 h-8 rounded-full bg-emerald-600/20 flex items-center justify-center">
+                          <span className="text-sm text-emerald-400">✓</span>
                         </div>
                       </div>
                       <p className="text-emerald-100 text-sm font-semibold">Chat completed</p>
                       {activeChat.rating ? (
-                        <div className="space-y-2">
-                          <p className="text-xs text-emerald-400/80">Your rating</p>
-                          <div className="flex justify-center gap-0.5">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <span
-                                key={star}
-                                className={star <= activeChat.rating ? 'text-yellow-400' : 'text-slate-600'}
-                              >
-                                ★
-                              </span>
-                            ))}
-                          </div>
+                        <div className="flex justify-center gap-0.5">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <span
+                              key={star}
+                              className={star <= activeChat.rating ? 'text-yellow-400 text-sm' : 'text-slate-600 text-sm'}
+                            >
+                              ★
+                            </span>
+                          ))}
                         </div>
                       ) : (
-                        <p className="text-xs text-emerald-400/80">Thank you for the conversation!</p>
+                        <p className="text-xs text-emerald-400/80">Rate your mentor</p>
                       )}
                     </div>
                   </div>
@@ -731,11 +753,13 @@ function UserMessages() {
 
                 {/* Mobile Input or Rating Section */}
                 {showRating ? (
-                  <div className="p-4 border-t border-emerald-600/20 bg-gradient-to-r from-emerald-600/5 to-emerald-600/5">
+                  <div className="p-4 border-t border-orange-600/20 bg-gradient-to-r from-orange-600/5 to-orange-600/5">
                     <div className="text-center space-y-3">
                       <div>
-                        <p className="text-emerald-100 font-semibold text-sm mb-1">Problem solved?</p>
-                        <p className="text-xs text-emerald-400/80">Rate your mentor</p>
+                        <p className="text-orange-100 font-semibold text-sm mb-1">
+                          {showRatingPrompt ? 'Mentor closed the chat' : 'Problem solved?'}
+                        </p>
+                        <p className="text-xs text-orange-400/80">Rate your mentor</p>
                       </div>
                       
                       <div className="flex justify-center gap-3">
@@ -747,7 +771,7 @@ function UserMessages() {
                               star <= rating
                                 ? 'text-yellow-400'
                                 : 'text-slate-400'
-                            }`}
+                            } hover:text-yellow-300 transition-colors`}
                           >
                             <Star className="w-5 h-5 fill-current" />
                           </button>
@@ -755,13 +779,13 @@ function UserMessages() {
                       </div>
 
                       {rating > 0 && (
-                        <p className="text-xs text-emerald-300">
+                        <p className="text-xs text-orange-300">
                           Rated {rating}★
                         </p>
                       )}
                     </div>
                   </div>
-                ) : activeChat?.status === 'completed' ? (
+                ) : activeChat?.status === 'completed' && activeChat?.rating ? (
                   <div className="p-4 border-t border-emerald-600/20 bg-gradient-to-r from-emerald-600/5 to-emerald-600/5">
                     <div className="text-center space-y-2">
                       <div className="flex justify-center">
