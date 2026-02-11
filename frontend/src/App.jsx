@@ -21,6 +21,7 @@ import UserMessages from "./pages/UserMessages"
 import { useEffect } from "react";
 import { getSocket } from "../socket";
 import useGetMyRequestsById from "./hooks/useGetMyRequests";
+import useGetChats from "./hooks/useGetChats";
 
 export const serverUrl = "http://localhost:3000";
 
@@ -28,8 +29,10 @@ function App() {
   useGetCurrentUser();
   useGetMentors();
   useMyQueriesById();
-  useGetMyRequestsById()
+  useGetMyRequestsById();
+  useGetChats()
   const { userData } = useSelector((state) => state.user);
+ 
 
   useEffect(()=>{
     if(!userData?._id) return;

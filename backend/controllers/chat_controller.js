@@ -22,6 +22,7 @@ const getMentorChats=async (req,res)=>{
             status: chat.status,
             rating: chat.rating,
             ratedAt: chat.ratedAt,
+            messages:chat.messages,
             lastMessage: chat.messages && chat.messages.length > 0 
                 ? chat.messages[chat.messages.length - 1].content 
                 : "No messages yet",
@@ -56,6 +57,7 @@ const getStudentChats=async (req,res)=>{
             status: chat.status,
             rating: chat.rating,
             ratedAt: chat.ratedAt,
+            messages:chat.messages,
             studentIsOnline: chat.student?.isOnline || false,
             mentorIsOnline: chat.mentor?.isOnline || false,
             lastMessage: chat.messages && chat.messages.length > 0 

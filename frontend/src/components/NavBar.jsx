@@ -40,12 +40,20 @@ const NavBar = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
+  const {pendingChats}=useSelector(state=>state.chat)
+  let c=0;
+  pendingChats?.map((chats)=>{
+    chats?.messages?.map(chat=>{
+      if(chat.sender!=userData._id && !chat.isRead){
+        c+=1;
+      }
+    })
+  })
   const studentNavItems = [
     { name: 'Mentors', path: '/user/mentors', icon: Users },
     { name: 'Ask Question', path: '/user/ask-question', icon: HelpCircle },
     { name: 'My Queries', path: '/user/queries', icon: FileText },
-    { name: 'Messages', path: '/user/messages', icon: MessageSquare, badge: 3 },
+    { name: 'Messages', path: '/user/messages', icon: MessageSquare, badge:c},
     // { name: 'Resources', path: '/user/resources', icon: BookOpen }
   ];
 const [requestslength, setRequestLength] = useState(0);

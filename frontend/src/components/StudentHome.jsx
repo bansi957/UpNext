@@ -28,10 +28,11 @@ function StudentHome() {
   const [greeting, setGreeting] = useState('');
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [recentConversations, setRecentConversations] = useState([]);
+  const {completedChats}=useSelector(state=>state.user)
   const [stats, setStats] = useState([
     { icon: Send, label: 'Active Requests', value: '0', color: 'from-purple-500 to-pink-500' },
-    { icon: MessageCircle, label: 'Conversations', value: '0', color: 'from-blue-500 to-cyan-500' },
-    { icon: Award, label: 'Completed', value: '0', color: 'from-green-500 to-emerald-500' }
+    { icon: MessageCircle, label: 'Pending Conversations', value: '0', color: 'from-blue-500 to-cyan-500' },
+    { icon: Award, label: 'Completed', value:'0', color: 'from-green-500 to-emerald-500' }
   ]);
   const [loading, setLoading] = useState(true);
 
@@ -53,11 +54,11 @@ function StudentHome() {
 
         const chats = chatsRes.data || [];
         setRecentConversations(chats.slice(0, 3));
-
+        const completedChats=chats.filter(c=>c.status=="completed")
         setStats([
           { icon: Send, label: 'Active Requests', value: chats.length > 0 ? chats.length.toString() : '0', color: 'from-purple-500 to-pink-500' },
-          { icon: MessageCircle, label: 'Conversations', value: chats.length.toString(), color: 'from-blue-500 to-cyan-500' },
-          { icon: Award, label: 'Completed', value: '0', color: 'from-green-500 to-emerald-500' }
+          { icon: MessageCircle, label: 'Pending Conversations', value: (chats.length-completedChats.length), color: 'from-blue-500 to-cyan-500' },
+          { icon: Award, label: 'Completed', value:completedChats.length.toString(), color: 'from-green-500 to-emerald-500' }
         ]);
 
         setLoading(false);

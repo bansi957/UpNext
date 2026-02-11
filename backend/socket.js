@@ -37,14 +37,14 @@ const socketHandler=(io)=>{
             }
         });
 
-         socket.on("disconnect",async ()=>{
-            try {
-                const user=await User.findOneAndUpdate({socketId:socket.id},{socketId:null,isOnline:false},{new:true})
+        //  socket.on("disconnect",async ()=>{
+        //     try {
+        //         const user=await User.findOneAndUpdate({socketId:socket.id},{socketId:null,isOnline:false},{new:true})
 
-            } catch (error) {
-                console.log(error)
-            }
-        })
+        //     } catch (error) {
+        //         console.log(error)
+        //     }
+        // })
 
 
  socket.on("disconnect",async ()=>{

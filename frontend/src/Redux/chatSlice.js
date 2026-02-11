@@ -3,19 +3,24 @@ import { createSlice } from '@reduxjs/toolkit';
 const chatSlice = createSlice({
   name: 'chat',
   initialState: {
-    chats: [],
+    pendingChats: [],
     activeChat: null,
+    completedChats:[],
     messages: [],
     loading: false,
     error: null
   },
   reducers: {
-    setChats(state, action) {
-      state.chats = action.payload;
+    setPendingChats(state, action) {
+      state.pendingChats = action.payload;
+    },
+    setCompletedChats(state, action) {
+      state.completedChats = action.payload;
     },
     setActiveChat(state, action) {
       state.activeChat = action.payload;
     },
+
     setMessages(state, action) {
       state.messages = action.payload;
     },
@@ -41,7 +46,9 @@ export const {
   addMessage,
   setLoading,
   setError,
-  clearMessages
+  clearMessages,
+  setPendingChats,
+  setCompletedChats
 } = chatSlice.actions;
 
 export default chatSlice.reducer;
