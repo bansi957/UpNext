@@ -40,6 +40,13 @@ const ProfilePageMentor = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
+  const [mentorStats, setMentorStats] = useState({
+    studentsHelped: 0,
+    rating: 0,
+    successRate: 0,
+    totalChats: 0,
+    completedChats: 0
+  });
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -103,6 +110,37 @@ const ProfilePageMentor = () => {
   ];
 
 
+  const fetchMentorStats = async () => {
+    try {
+      const response = await axios.get(
+        `${serverUrl}/api/mentors/stats`,
+        { withCredentials: true }
+      );
+      
+      const stats = response.data;
+      const completedChats = stats.completedChats || 0;
+      const totalChats = stats.totalChats || 0;
+      const successRate = totalChats > 0 ? Math.round((completedChats / totalChats) * 100) : 0;
+      
+      setMentorStats({
+        studentsHelped: stats.studentsHelped || userData?.studentsHelped || 0,
+        rating: stats.rating || userData?.rating || 0,
+        successRate: successRate,
+        totalChats: totalChats,
+        completedChats: completedChats
+      });
+    } catch (error) {
+      // Fallback to userData if available
+      setMentorStats({
+        studentsHelped: userData?.studentsHelped || 0,
+        rating: userData?.rating || 0,
+        successRate: 0,
+        totalChats: 0,
+        completedChats: 0
+      });
+    }
+  };
+
   useEffect(() => {
     if (userData) {
       setFormData({
@@ -127,6 +165,9 @@ const ProfilePageMentor = () => {
         achievements: userData.achievements || "",
       });
       setProfileImage(userData.profileImage || null);
+      
+      // Fetch mentor stats
+      fetchMentorStats();
     }
   }, [userData]);
 
@@ -867,41 +908,41 @@ const ProfilePageMentor = () => {
 
         {/* Mentor Stats */}
         <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 animate-slide-up">
-          <div className="bg-slate-800/40 backdrop-blur-2xl rounded-2xl shadow-2xl border border-purple-500/20 p-6">
+          <div className="bg-slate-800/40 backdrop-blur-2xl rounded-2xl shadow-2xl border border-purple-500/20 p-6 hover:border-green-500/40 transition-all duration-300">
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-xl bg-linear-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center">
                 <Users className="w-7 h-7 text-green-400" />
               </div>
               <div>
-                <p className="text-slate-400 text-sm font-medium">Students Mentored</p>
-                <p className="text-3xl font-black text-white">--</p>
+                <p className="text-slate-400 text-sm font-medium">Students Helped</p>
+                <p className="text-3xl font-black text-white">{mentorStats.studentsHelped}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-slate-800/40 backdrop-blur-2xl rounded-2xl shadow-2xl border border-purple-500/20 p-6">
+          <div className="bg-slate-800/40 backdrop-blur-2xl rounded-2xl shadow-2xl border border-purple-500/20 p-6 hover:border-yellow-500/40 transition-all duration-300">
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-xl bg-linear-to-br from-yellow-500/20 to-amber-500/20 flex items-center justify-center">
                 <Star className="w-7 h-7 text-yellow-400" />
               </div>
               <div>
                 <p className="text-slate-400 text-sm font-medium">Avg. Rating</p>
-                <p className="text-3xl font-black text-white">--</p>
+                <p className="text-3xl font-black text-white">{mentorStats.rating.toFixed(1)}★</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-slate-800/40 backdrop-blur-2xl rounded-2xl shadow-2xl border border-purple-500/20 p-6">
+          {/* <div className="bg-slate-800/40 backdrop-blur-2xl rounded-2xl shadow-2xl border border-purple-500/20 p-6 hover:border-blue-500/40 transition-all duration-300">
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-xl bg-linear-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center">
                 <TrendingUp className="w-7 h-7 text-blue-400" />
               </div>
               <div>
                 <p className="text-slate-400 text-sm font-medium">Success Rate</p>
-                <p className="text-3xl font-black text-white">--</p>
+                <p className="text-3xl font-black text-white">{mentorStats.successRate}%</p>
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
 

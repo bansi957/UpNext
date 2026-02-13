@@ -65,7 +65,7 @@ function MentorActiveChats() {
     fetchChats();
   }, []);
 
-  // Fetch messages for active chat
+  // Fetch messages for active chat - DO NOT mark as read
   useEffect(() => {
     if (activeChat?._id) {
       const fetchMessages = async () => {
@@ -76,18 +76,6 @@ function MentorActiveChats() {
           );
           setCurrentMessages(res.data.messages || []);
 
-          // Mark all student's messages as read
-          const studentMessageIds = res.data.messages
-            ?.filter(msg => msg.senderRole === 'student' && !msg.isRead)
-            .map(msg => msg._id) || [];
-
-          if (studentMessageIds.length > 0) {
-            axios.post(
-              `${serverUrl}/api/chats/mark-read/${activeChat._id}`,
-              { messageIds: studentMessageIds },
-              { withCredentials: true }
-            ).catch(err => console.error('Error marking messages as read:', err));
-          }
         } catch (err) {
           console.error('Error fetching messages:', err);
         }
@@ -95,7 +83,7 @@ function MentorActiveChats() {
 
       fetchMessages();
     }
-  }, [activeChat]);
+  }, [activeChat?._id]);
 
   // Auto-scroll to latest message
   useEffect(() => {
@@ -184,9 +172,9 @@ function MentorActiveChats() {
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Check file size (max 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        alert('File size must be less than 10MB');
+      // Check file size (max 50MB)
+      if (file.size > 50 * 1024 * 1024) {
+        alert('File size must be less than 50MB');
         return;
       }
 
@@ -247,115 +235,89 @@ function MentorActiveChats() {
     });
   };
 
-  useEffect(()=>{
-    if(!userData?._id) return;
-  
-    const socket=getSocket()
-  
-    socket.on('send-message',({messages,mentorId,chatId})=>{
-      if(mentorId==userData._id && chatId==activeChat?._id){
-        setCurrentMessages(messages)
-        
-        // Mark student's unread messages as read
-        const studentMessageIds = messages
-          ?.filter(msg => msg.senderRole === 'student' && !msg.isRead)
-          .map(msg => msg._id) || [];
+  // Socket listeners for chat updates
+  useEffect(() => {
+    if (!userData?._id || !activeChat?._id) return;
 
-        if (studentMessageIds.length > 0) {
-          axios.post(
-            `${serverUrl}/api/chats/mark-read/${chatId}`,
-            { messageIds: studentMessageIds },
-            { withCredentials: true }
-          ).catch(err => console.error('Error marking messages as read:', err));
+    const socket = getSocket();
+
+    socket.on('send-message', ({ messages, mentorId, studentId, chatId, mentorUnreadCount }) => {
+      // Update messages when EITHER mentor OR student sends a message
+      if (chatId == activeChat?._id) {
+        setCurrentMessages(messages);
+      }
+
+      // Update chat list - move chat to top
+      if (mentorId == userData?._id || studentId == userData?._id) {
+        const fchats = allChats.find((c) => c._id == chatId);
+        const schats = allChats.filter((c) => c._id !== chatId);
+        if (fchats) {
+          setAllChats([fchats, ...schats]);
         }
       }
 
-      
-     if(mentorId==userData?._id){
-        const fchats=allChats.find(c=>c._id==chatId)
-         const schats=allChats.filter(c=>c._id!==chatId)
-      setAllChats([fchats,...schats])
-       setAllChats((prev) =>
+      // Update last message and unread count in chat list
+      setAllChats((prev) =>
         prev.map((chat) =>
-          chat._id == chatId
-            ? { ...chat, lastMessage:messages[messages.length-1].content||"bansi", lastMessageTime: new Date() }
+          chat._id === chatId
+            ? {
+                ...chat,
+                lastMessage: messages[messages.length - 1].content || '',
+                lastMessageTime: new Date(),
+                unreadCount: mentorUnreadCount || 0
+              }
+            : chat
+        )
+      );
+    });
+
+    socket.on('isOnline', ({ userId }) => {
+      setAllChats((prev) =>
+        prev.map((chat) =>
+          chat.student?._id === userId ? { ...chat, studentIsOnline: true } : chat
+        )
+      );
+
+      if (activeChat?.student?._id === userId) {
+        dispatch(setActiveChat({ ...activeChat, studentIsOnline: true }));
+      }
+    });
+
+    socket.on('isOffline', ({ userId }) => {
+      setAllChats((prev) =>
+        prev.map((chat) =>
+          chat.student?._id === userId ? { ...chat, studentIsOnline: false } : chat
+        )
+      );
+
+      if (activeChat?.student?._id === userId) {
+        dispatch(setActiveChat({ ...activeChat, studentIsOnline: false }));
+      }
+    });
+
+    socket.on('chat-completed', ({ chatId }) => {
+      setAllChats((prev) =>
+        prev.map((chat) =>
+          chat._id === chatId
+            ? { ...chat, status: 'completed', studentIsOnline: false }
             : chat
         )
       );
 
+      if (activeChat?._id === chatId) {
+        dispatch(setActiveChat({ ...activeChat, status: 'completed', studentIsOnline: false }));
       }
-    })
-    socket.on('isOnline', ({ userId }) => {
-      setAllChats(prev =>
-        prev.map(chat =>
-          chat.student?._id === userId
-            ? { ...chat, studentIsOnline: true }
-            : chat
-        )
-      )
-    
-      // also update activeChat if open
-      if (activeChat?.student?._id === userId) {
-        dispatch(setActiveChat({ ...activeChat, studentIsOnline: true }))
-      }
-    })
-    socket.on('isOffline', ({ userId }) => {
-  setAllChats(prev =>
-    prev.map(chat =>
-      chat.student?._id === userId
-        ? { ...chat, studentIsOnline: false }
-        : chat
-    )
-  )
-      if (activeChat?.student?._id === userId) {
-        dispatch(setActiveChat({ ...activeChat, studentIsOnline: false }))
-      }
-})
+    });
 
-socket.on('chat-completed', ({ chatId }) => {
-  // update left-side chat list
-  setAllChats(prev =>
-    prev.map(chat =>
-      chat._id === chatId
-        ? {
-            ...chat,
-            status: 'completed',
-            studentIsOnline: false // 🔥 FORCE OFF
-          }
-        : chat
-    )
-  )
+    return () => {
+      socket.off('send-message');
+      socket.off('isOnline');
+      socket.off('isOffline');
+      socket.off('chat-completed');
+    };
+  }, [userData?._id, activeChat?._id, serverUrl, allChats, dispatch]);
 
-  // update right-side active chat
-if (activeChat?._id === chatId) {
-  dispatch(setActiveChat({
-    ...activeChat,
-    status: 'completed',
-    studentIsOnline: false
-  }))
-}
-
-})
-
-
-    // socket.on('messages-read',({chatId, messageIds})=>{
-    //   if(chatId==activeChat?._id){
-    //     setCurrentMessages(prev => 
-    //       prev.map(msg => 
-    //         messageIds.includes(msg._id) || messageIds.includes(msg?._id.toString()) ? {...msg, isRead: true} : msg
-    //       )
-    //     )
-    //   }
-    // })
-  
-    return ()=>{
-      socket.off('send-message')
-      socket.off('isOnline')
-      socket.off('isOffline')
-      socket.off('chat-completed')
-    }
-  },[userData?._id,activeChat,serverUrl])
-
+  // ...existing code...
   useEffect(() => {
   if (window.innerWidth < 768) {
     setIsMobileView(false); // always show chat list first
@@ -394,7 +356,17 @@ const handleCompleteChat = async () => {
       <NavBar />
 
       <div className="min-h-screen bg-linear-to-br from-slate-900 via-purple-900 to-slate-900 pt-20 pb-10 px-4">
-        <div className="max-w-7xl mx-auto h-[calc(100vh-120px)]">
+        <div className="max-w-7xl my-5 mx-auto">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 px-4 py-2 mb-6 rounded-xl bg-slate-800/50 text-slate-300 hover:text-white transition-all border border-slate-700 hover:border-purple-500/40"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </button>
+        </div>
+
+        <div className="max-w-7xl mx-auto h-[calc(100vh-180px)]">
           <div className="flex gap-4 h-full rounded-2xl overflow-hidden backdrop-blur-xl border border-purple-500/20 bg-slate-800/40">
 
             {/* Left Sidebar - Chats List */}
@@ -414,7 +386,7 @@ const handleCompleteChat = async () => {
                       className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-700/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                     />
                   </div>
-
+                
                   {/* Tab Buttons */}
                   <div className="flex gap-2">
                     <button
@@ -452,7 +424,7 @@ const handleCompleteChat = async () => {
                     filteredChats.map((chat) => (
                       <button
                         key={chat._id}
-                        onClick={() => dispatch(setActiveChat(chat))}
+                        onClick={() => handleSelectChat(chat)}
                         className={`w-full p-4 border-b border-slate-700/30 text-left transition-all ${
                           activeChat?._id === chat._id
                             ? 'bg-purple-600/20 border-l-4 border-l-purple-600'
@@ -461,7 +433,7 @@ const handleCompleteChat = async () => {
                       >
                         <div className="flex items-center gap-3">
                           <div className="relative w-12 h-12">
-                            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0 ${
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold shrink-0 ${
                               chat.status === 'completed'
                                 ? 'bg-emerald-600/60'
                                 : 'bg-linear-to-br from-purple-500 to-pink-500'
@@ -483,6 +455,11 @@ const handleCompleteChat = async () => {
                             </p>
                           </div>
                           <div className="flex flex-col items-end gap-1">
+                            {chat?.unreadCount > 0 && chat?.status !== 'completed' && (
+                              <span className="px-2 py-1 text-xs font-bold text-white bg-red-500 rounded-full">
+                                {chat.unreadCount}
+                              </span>
+                            )}
                             {chat.status === 'completed' && (
                               <span className="text-xs font-semibold text-emerald-400">Done</span>
                             )}
@@ -545,15 +522,23 @@ const handleCompleteChat = async () => {
                 </div>
 
                 {/* Question Details */}
-                <div className="px-4 py-3 bg-slate-800/30 border-b border-slate-700/50">
-                  <p className="text-xs text-slate-400 mb-1">Question</p>
-                  <p className="text-sm font-semibold text-white truncate">{activeChat.questionTitle || 'Loading...'}</p>
+                <div className="px-4 py-3 bg-slate-800/30 border-b border-slate-700/50 flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-slate-400 mb-1">Question</p>
+                    <p className="text-sm font-semibold text-white truncate">{activeChat.questionTitle || 'Loading...'}</p>
+                  </div>
+                  <button
+                    onClick={() => navigate(`/question/${activeChat.question?._id}`)}
+                    className="ml-3 px-3 py-1.5 text-xs font-medium rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition-all whitespace-nowrap"
+                  >
+                    View
+                  </button>
                 </div>
 
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
                   {currentMessages.map((msg, idx) => (
-                    <ChatMessage key={idx} message={msg} />
+                    <ChatMessage key={idx} message={msg} chatId={activeChat?._id} />
                   ))}
                   <div ref={messagesEndRef} />
                 </div>
@@ -610,14 +595,13 @@ const handleCompleteChat = async () => {
 
                     {/* Message Input */}
                     <div className="flex items-center gap-3">
-                      <label className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400 cursor-pointer transition">
+                      <label className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400 cursor-pointer transition" title="Attach file">
                         <Paperclip className="w-5 h-5" />
                         <input
                           ref={fileInputRef}
                           type="file"
                           onChange={handleFileSelect}
                           className="hidden"
-                          accept="*/*"
                         />
                       </label>
                       <input
@@ -675,15 +659,23 @@ const handleCompleteChat = async () => {
                 </div>
 
                 {/* Question Details */}
-                <div className="px-4 py-3 bg-slate-800/30 border-b border-slate-700/50">
-                  <p className="text-xs text-slate-400 mb-1">Question</p>
-                  <p className="text-sm font-semibold text-white truncate">{activeChat.questionTitle || 'Loading...'}</p>
+                <div className="px-4 py-3 bg-slate-800/30 border-b border-slate-700/50 flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-slate-400 mb-1">Question</p>
+                    <p className="text-sm font-semibold text-white truncate">{activeChat.questionTitle || 'Loading...'}</p>
+                  </div>
+                  <button
+                    onClick={() => navigate(`/question/${activeChat.question?._id}`)}
+                    className="ml-3 px-3 py-1.5 text-xs font-medium rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition-all whitespace-nowrap"
+                  >
+                    View
+                  </button>
                 </div>
 
                 {/* Mobile Messages */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
                   {currentMessages.map((msg, idx) => (
-                    <ChatMessage key={idx} message={msg} />
+                    <ChatMessage key={idx} message={msg} chatId={activeChat?._id} />
                   ))}
                   <div ref={messagesEndRef} />
                 </div>
@@ -702,36 +694,36 @@ const handleCompleteChat = async () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="border-t border-slate-700/50 bg-slate-800/50">
-                    {/* File Preview for Mobile */}
+                  <>
+                    {/* File Preview for Mobile - Moved outside to be more visible */}
                     {filePreview && (
-                      <div className="p-4 bg-slate-900/50 border-b border-slate-700/50">
+                      <div className="border-t border-slate-700/50 bg-slate-900/80 p-4">
                         {filePreview.type === 'image' ? (
-                          <div className="relative inline-block">
+                          <div className="relative inline-block w-full">
                             <img
                               src={filePreview.url}
                               alt="Preview"
-                              className="max-h-40 rounded-lg border border-slate-600"
+                              className="w-full max-h-48 rounded-lg border border-slate-600 object-cover"
                             />
                             <button
                               onClick={handleRemoveFile}
-                              className="absolute -top-2 -right-2 p-1 bg-red-600 rounded-full hover:bg-red-700 transition"
+                              className="absolute -top-3 -right-3 p-1 bg-red-600 rounded-full hover:bg-red-700 transition"
                             >
-                              <X className="w-4 h-4 text-white" />
+                              <X className="w-5 h-5 text-white" />
                             </button>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg border border-slate-700">
-                            <FileIcon className="w-5 h-5 text-purple-400 shrink-0" />
+                          <div className="flex items-center gap-3 p-3 bg-slate-800/70 rounded-lg border border-slate-700/50">
+                            <FileIcon className="w-6 h-6 text-purple-400 shrink-0" />
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-white truncate">{filePreview.name}</p>
                               <p className="text-xs text-slate-400">{filePreview.size}</p>
                             </div>
                             <button
                               onClick={handleRemoveFile}
-                              className="p-1 hover:bg-slate-700/50 rounded transition"
+                              className="p-1 hover:bg-slate-600 rounded transition"
                             >
-                              <X className="w-4 h-4 text-slate-400" />
+                              <X className="w-5 h-5 text-slate-300" />
                             </button>
                           </div>
                         )}
@@ -739,15 +731,14 @@ const handleCompleteChat = async () => {
                     )}
 
                     {/* Mobile Input */}
-                    <div className="p-4 flex items-center gap-2">
-                      <label className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400 cursor-pointer transition">
+                    <div className="border-t border-slate-700/50 bg-slate-800/50 p-4 flex items-center gap-2">
+                      <label className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400 cursor-pointer transition" title="Attach file">
                         <Paperclip className="w-5 h-5" />
                         <input
                           ref={fileInputRef}
                           type="file"
                           onChange={handleFileSelect}
                           className="hidden"
-                          accept="*/*"
                         />
                       </label>
                       <input
@@ -771,7 +762,7 @@ const handleCompleteChat = async () => {
                         )}
                       </button>
                     </div>
-                  </div>
+                  </>
                 )}
               </div>
             )}

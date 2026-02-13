@@ -36,6 +36,7 @@ function MyQueries() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedStatus, setSelectedStatus] = useState("pending");
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   const categories = [
@@ -76,6 +77,22 @@ function MyQueries() {
   useEffect(() => {
     let filtered = myQuestions;
 
+    // Filter by status
+    if (selectedStatus !== "all") {
+      filtered = filtered.filter((q) => {
+        if (selectedStatus === "pending") {
+          return q.status == "pending";
+        } else if (selectedStatus === "completed") {
+          return q.status === "completed";
+        }
+        else if(selectedStatus=="accepted"){
+              return q.status === "accepted";
+
+        }
+        return true;
+      });
+    }
+
     if (selectedCategory !== "all") {
       filtered = filtered.filter(
         (q) => q.category === selectedCategory
@@ -94,7 +111,7 @@ function MyQueries() {
     }
 
     setFilteredQuestions(filtered);
-  }, [searchQuery, selectedCategory, myQuestions]);
+  }, [searchQuery, selectedCategory, selectedStatus, myQuestions]);
   const dispatch=useDispatch()
   const handleDeleteQuestion = async (questionId) => {
     try {
@@ -119,6 +136,13 @@ function MyQueries() {
         icon: CheckCircle,
         label: "Accepted",
         color: "from-green-500 to-emerald-500"
+      };
+    }
+    if (question.status === 'completed') {
+      return {
+        icon: CheckCircle,
+        label: "Completed",
+        color: "from-blue-500 to-cyan-500"
       };
     }
     return {
@@ -194,21 +218,50 @@ function MyQueries() {
             </div>
           </div>
 
+          {/* Status Filter */}
+          <div className="mb-6">
+            <p className="text-slate-400 text-xs sm:text-sm font-semibold mb-3">STATUS</p>
+            <div className="flex flex-wrap gap-2 mb-6 overflow-x-auto pb-2">
+              {["all", "pending", "accepted", "completed"].map((status) => (
+                <button
+                  key={status}
+                  onClick={() => setSelectedStatus(status)}
+                  className={`px-4 sm:px-5 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all flex-shrink-0 whitespace-nowrap ${
+                    selectedStatus === status
+                      ? status === "pending"
+                        ? "bg-yellow-600 text-white shadow-lg shadow-yellow-500/30"
+                        : status === "accepted"
+                        ? "bg-green-600 text-white shadow-lg shadow-green-500/30"
+                        : status === "completed"
+                        ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30"
+                        : "bg-purple-600 text-white shadow-lg shadow-purple-500/30"
+                      : "bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700"
+                  }`}
+                >
+                  {status === "all" ? "All" : status === "pending" ? "⏳ Pending" : status === "accepted" ? "✓ Accepted" : "✔ Completed"}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Categories */}
-          <div className="flex flex-wrap gap-2 mb-8 overflow-x-auto pb-2">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm transition-all flex-shrink-0 ${
-                  selectedCategory === cat
-                    ? "bg-purple-600 text-white"
-                    : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                }`}
-              >
-                {cat === "all" ? "All" : cat}
-              </button>
-            ))}
+          <div className="mb-8">
+            <p className="text-slate-400 text-xs sm:text-sm font-semibold mb-3">CATEGORY</p>
+            <div className="flex flex-wrap gap-2 overflow-x-auto pb-2">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm transition-all flex-shrink-0 ${
+                    selectedCategory === cat
+                      ? "bg-purple-600 text-white shadow-lg shadow-purple-500/20"
+                      : "bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700"
+                  }`}
+                >
+                  {cat === "all" ? "All" : cat}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Content */}
@@ -263,7 +316,7 @@ function MyQueries() {
                         <Eye size={14} /> View
                       </button>
 
-                      {q.status !== 'accepted' && (
+                      {q.status !== 'accepted' && q.status !== 'completed' && (
                         <button
                           onClick={() => navigate(`/question/${q._id}/edit`)}
                           className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition-all"
@@ -281,12 +334,14 @@ function MyQueries() {
                         </button>
                       )}
 
-                      <button
-                        onClick={() => setDeleteConfirm(q._id)}
-                        className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm transition-all ml-auto"
-                      >
-                        <Trash2 size={14} /> Delete
-                      </button>
+                      {q.status !== 'accepted' && q.status !== 'completed' && (
+                        <button
+                          onClick={() => setDeleteConfirm(q._id)}
+                          className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm transition-all ml-auto"
+                        >
+                          <Trash2 size={14} /> Delete
+                        </button>
+                      )}
                     </div>
 
                     {deleteConfirm === q._id && (

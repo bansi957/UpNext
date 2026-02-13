@@ -11,7 +11,8 @@ import {
   Image as ImageIcon,
   Edit,
   Trash2,
-  User
+  User,
+  MessageCircle
 } from 'lucide-react';
 import axios from 'axios';
 import { serverUrl } from '../App';
@@ -187,8 +188,14 @@ function ViewQuestion() {
 
                   <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                     <span className="px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-slate-900/40 border border-purple-500/20 text-purple-300">{question.category}</span>
-                    <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${question.status === 'accepted' ? 'bg-linear-to-r from-green-500 to-emerald-500 text-white' : 'bg-yellow-700/10 text-yellow-300 border border-yellow-500/20'}`}>
-                      {question.status === 'accepted' ? 'Accepted' : 'Pending'}
+                    <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${
+                      question.status === 'accepted' 
+                        ? 'bg-linear-to-r from-green-500 to-emerald-500 text-white' 
+                        : question.status === 'completed'
+                        ? 'bg-linear-to-r from-blue-500 to-cyan-500 text-white'
+                        : 'bg-yellow-700/10 text-yellow-300 border border-yellow-500/20'
+                    }`}>
+                      {question.status === 'accepted' ? 'Accepted' : question.status === 'completed' ? 'Completed' : 'Pending'}
                     </span>
                     <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold ${
                       question.questionType === 'specific' 
@@ -238,6 +245,59 @@ function ViewQuestion() {
                   </div>
                 )}
 
+                {question.questionType === 'all' && question.status === 'accepted' && userData?.role !== 'mentor' && question.acceptedBy && (
+                  <div className="rounded-2xl border-2 border-green-500/40 bg-green-500/10 p-4 sm:p-6">
+                    <p className="text-xs sm:text-sm text-green-300 font-semibold mb-4 flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <span>Your question was accepted by:</span>
+                    </p>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-900/60 flex items-center justify-center overflow-hidden border border-slate-700 shrink-0">
+                        {question.acceptedBy?.profileImage ? (
+                          <img src={question.acceptedBy.profileImage} alt="accepted mentor" className="w-full h-full object-cover" />
+                        ) : (
+                          <User className="w-5 sm:w-6 h-5 sm:h-6 text-slate-400" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-sm sm:text-base md:text-lg font-bold text-white truncate">{question.acceptedBy?.fullName}</h4>
+                        <p className="text-xs sm:text-sm text-slate-400 truncate">{question.acceptedBy?.domain || question.acceptedBy?.position}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {question.status === 'completed' && userData?.role !== 'mentor' && question.acceptedBy && (
+                  <div className="rounded-2xl border-2 border-blue-500/40 bg-blue-500/10 p-4 sm:p-6">
+                    <p className="text-xs sm:text-sm text-blue-300 font-semibold mb-4 flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <span>Your question was solved by:</span>
+                    </p>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 flex-1">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-900/60 flex items-center justify-center overflow-hidden border border-slate-700 shrink-0">
+                          {question.acceptedBy?.profileImage ? (
+                            <img src={question.acceptedBy.profileImage} alt="mentor" className="w-full h-full object-cover" />
+                          ) : (
+                            <User className="w-5 sm:w-6 h-5 sm:h-6 text-slate-400" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-sm sm:text-base md:text-lg font-bold text-white truncate">{question.acceptedBy?.fullName}</h4>
+                          <p className="text-xs sm:text-sm text-slate-400 truncate">{question.acceptedBy?.domain || question.acceptedBy?.position}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleChat(question._id)}
+                        className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition-all whitespace-nowrap"
+                      >
+                        <MessageCircle className="w-4 h-4 shrink-0" />
+                        <span>View Chat</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6">
                   <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-slate-400">
                       <div className="flex items-center gap-1 sm:gap-2">
@@ -263,15 +323,17 @@ function ViewQuestion() {
                     ) : (
                       userData && userData._id === question.author?._id && (
                         <>
-                          {question.status !== 'accepted' && (
+                          {question.status !== 'accepted' && question.status !== 'completed' && (
                             <button onClick={() => navigate(`/question/${question._id}/edit`)} className="flex items-center justify-center sm:justify-start gap-2 px-4 py-2 rounded-xl bg-linear-to-r from-purple-600 to-pink-600 text-white font-medium text-sm shadow-2xl shadow-purple-500/50 hover:scale-105 transition-all">
                               <Edit className="w-4 h-4 shrink-0" />
                               <span>Edit</span>
                             </button>
                           )}
-                          <button onClick={()=>handleDeleteQuestion(id)} className="flex items-center justify-center px-4 py-2 rounded-xl bg-red-600/80 text-white font-medium text-sm hover:bg-red-700 transition-all">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {question.status !== 'accepted' && question.status !== 'completed' && (
+                            <button onClick={()=>handleDeleteQuestion(id)} className="flex items-center justify-center px-4 py-2 rounded-xl bg-red-600/80 text-white font-medium text-sm hover:bg-red-700 transition-all">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </>
                       )
                     )}

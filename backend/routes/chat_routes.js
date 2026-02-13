@@ -1,7 +1,7 @@
 const express=require("express")
 const auth_middileware = require("../middleware/authMiddleware")
 const upload = require("../middleware/multer")
-const { getMentorChats, getStudentChats, getChatById, getChatByQuestionId, createChat, markMessagesAsRead, completeChat, rateMentor } = require("../controllers/chat_controller")
+const { getMentorChats, getStudentChats, getChatById, getChatByQuestionId, createChat, markMessagesAsRead, completeChat, rateMentor, downloadFile } = require("../controllers/chat_controller")
 const chatRouter=express.Router()
 
 
@@ -12,6 +12,7 @@ chatRouter.post("/send-message/:chatId",auth_middileware,upload.single("file"),c
 chatRouter.post("/mark-read/:chatId",auth_middileware,markMessagesAsRead)
 chatRouter.post("/complete/:chatId",auth_middileware,completeChat)
 chatRouter.post("/rate/:chatId",auth_middileware,rateMentor)
+chatRouter.get("/download/:chatId/:messageId",downloadFile)
 
 chatRouter.get("/:chatId",auth_middileware,getChatById)
 

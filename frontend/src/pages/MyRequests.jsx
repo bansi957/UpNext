@@ -3,7 +3,7 @@ import NavBar from "../components/NavBar";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { serverUrl } from "../App";
-import { Send, Clock, FileText, CheckCircle, Eye, User, MessageCircle } from "lucide-react";
+import { Send, Clock, FileText, CheckCircle, Eye, User, MessageCircle, ArrowLeft } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { setActiveChat } from "../Redux/chatSlice";
 import { getSocket } from "../../socket";
@@ -13,7 +13,7 @@ function MyRequests() {
   const dispatch = useDispatch();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all"); // all | pending | accepted
+  const [filter, setFilter] = useState("pending"); // all | pending | accepted
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -118,6 +118,14 @@ function MyRequests() {
         </div>
 
         <div className="relative max-w-6xl mx-auto">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 px-4 py-2 mb-6 rounded-xl bg-slate-800/50 text-slate-300 hover:text-white transition-all border border-slate-700 hover:border-purple-500/40"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </button>
+
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-8 animate-slide-down">
             <div>
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 backdrop-blur-xl border border-purple-500/20 mb-4">

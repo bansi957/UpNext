@@ -27,7 +27,7 @@ const questionSchema=mongoose.Schema({
     },
     status:{
       type:String,
-      enum:["pending","accepted"],
+      enum:["pending","accepted","completed"],
       default:"pending"
     },
     questionType:{
@@ -42,6 +42,11 @@ const questionSchema=mongoose.Schema({
     },
     assignedTo:{
       type:mongoose.Schema.Types.ObjectId,
+    },
+    acceptedBy:{
+      type:mongoose.Schema.Types.ObjectId,
+      ref:"User",
+      default:null
     }
 }, {timestamps:true})
 

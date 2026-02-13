@@ -22,6 +22,7 @@ import { useEffect } from "react";
 import { getSocket } from "../socket";
 import useGetMyRequestsById from "./hooks/useGetMyRequests";
 import useGetChats from "./hooks/useGetChats";
+import useGetMentorChats from "./hooks/useGetMentorChats";
 
 export const serverUrl = "http://localhost:3000";
 
@@ -31,10 +32,11 @@ function App() {
   useMyQueriesById();
   useGetMyRequestsById();
   useGetChats()
+  useGetMentorChats()
   const { userData } = useSelector((state) => state.user);
  
 
-  useEffect(()=>{
+  useEffect(()=>{ 
     if(!userData?._id) return;
     const socket=getSocket()
 

@@ -42,7 +42,8 @@ const getQuestionById = async (req, res) => {
     const { id } = req.params;
     const question = await Question.findById(id)
       .populate("author", "fullName email profileImage")
-      .populate("targetMentor", "fullName email profileImage");
+      .populate("targetMentor", "fullName email profileImage domain position")
+      .populate("acceptedBy", "fullName email profileImage domain position");
 
     if (!question) {
       return res.status(404).json({ message: "Question not found" });

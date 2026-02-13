@@ -28,6 +28,7 @@ function Mentors() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDomain, setSelectedDomain] = useState('all');
+  const [totalStudentsHelped, setTotalStudentsHelped] = useState(0);
 
   const domains = [
     'all',
@@ -69,8 +70,10 @@ function Mentors() {
     studentsHelped: m.studentsHelped ?? 120
   }));
 
+  const totalHelped = normalized.reduce((sum, mentor) => sum + mentor.studentsHelped, 0);
   setMentorsData(normalized);
   setFilteredMentors(normalized);
+  setTotalStudentsHelped(totalHelped);
   setLoading(false);
 }, [mentors]);
 
@@ -237,7 +240,7 @@ function Mentors() {
                 </div>
                 <div>
                   <p className="text-slate-400 text-sm font-medium">Students Helped</p>
-                  <p className="text-3xl font-black text-white">1400+</p>
+                  <p className="text-3xl font-black text-white">{totalStudentsHelped.toLocaleString()}+</p>
                 </div>
               </div>
             </div>

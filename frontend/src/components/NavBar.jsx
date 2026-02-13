@@ -9,15 +9,18 @@ import {
 import axios from 'axios';
 import { serverUrl } from '../App';
 import { addUserData } from '../Redux/userSlice';
+import { getSocket } from '../../socket';
 
 const NavBar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showMobileQuickDropdown, setShowMobileQuickDropdown] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
   const location = useLocation();
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
+  const mobileQuickRef = useRef(null);
   
   const {userData,requests} = useSelector((state) => state.user);
   const role = userData?.role;
@@ -36,41 +39,81 @@ const NavBar = () => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setShowProfileDropdown(false);
       }
+      if (mobileQuickRef.current && !mobileQuickRef.current.contains(event.target)) {
+        setShowMobileQuickDropdown(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
   const {pendingChats}=useSelector(state=>state.chat)
-  let c=0;
-  pendingChats?.map((chats)=>{
-    chats?.messages?.map(chat=>{
-      if(chat.sender!=userData._id && !chat.isRead){
-        c+=1;
+  const [c,setC]=useState(0);
+  useEffect(() => {
+  if (!pendingChats || !Array.isArray(pendingChats)) return;
+
+  let totalUnread = 0;
+
+  pendingChats.forEach(chat => {
+    if (chat?.messages && Array.isArray(chat.messages)) {
+      chat.messages.forEach(msg => {
+        if (msg.sender !== userData?._id && !msg.isRead) {
+          totalUnread += 1;
+        }
+      });
+    }
+  });
+
+  setC(totalUnread);
+
+}, [pendingChats, userData?._id]);
+
+
+
+  useEffect(()=>{
+    const socket=getSocket()
+     socket.on('send-message', ({ messages,sender, mentorId, studentId, chatId, mentorUnreadCount, studentUnreadCount }) => {
+      const t=pendingChats.find(c=>c._id==chatId)
+      if(t){
+        // When STUDENT sends a message, DECREMENT for student, INCREMENT for mentor
+        if (sender=="student") {
+          // Student sending = reset their unread to 0
+          setC(prev => {
+            // Get current unread for this chat from pendingChats
+            const chatUnread = t?.messages?.filter(msg => msg.sender !== userData?._id && !msg.isRead).length || 0;
+            // Decrement by that amount (since student just replied, all mentor's unread messages are now read)
+            return Math.max(0, prev - chatUnread);
+          });
+        }
+        
+        // When MENTOR sends a message, INCREMENT for student
+        if (sender=="mentor" && studentId==userData?._id) {
+          setC(prev => prev + 1)
+        }
       }
-    })
-  })
+    });
+    return()=>{
+    socket.off('send-message')}
+  },[userData?._id, pendingChats])
   const studentNavItems = [
     { name: 'Mentors', path: '/user/mentors', icon: Users },
     { name: 'Ask Question', path: '/user/ask-question', icon: HelpCircle },
     { name: 'My Queries', path: '/user/queries', icon: FileText },
     { name: 'Messages', path: '/user/messages', icon: MessageSquare, badge:c},
-    // { name: 'Resources', path: '/user/resources', icon: BookOpen }
   ];
-const [requestslength, setRequestLength] = useState(0);
 
-useEffect(() => {
-  const count = requests?.filter(
-    (e) => e.status === "pending"
-  ).length || 0;
+  const [requestslength, setRequestLength] = useState(0);
 
-  setRequestLength(count);
-}, [requests]);
-
+  useEffect(() => {
+    const count = requests?.filter(
+      (e) => e.status === "pending"
+    ).length || 0;
+    setRequestLength(count);
+  }, [requests]);
 
   const mentorNavItems = [
     { name: 'Requests', path: '/mentor/requests', icon: FileText, badge: requestslength },
-    { name: 'Active Chats', path: '/mentor/chats', icon: MessageSquare },
-    // { name: 'My Rank', path: '/mentor/rank', icon: Award },
+    { name: 'Active Chats', path: '/mentor/chats', icon: MessageSquare, badge: c },
     { name: 'Guidelines', path: '/mentor/guidelines', icon: BookOpen }
   ];
 
@@ -87,6 +130,8 @@ useEffect(() => {
     navigate('/login');
   };
 
+
+
   return (
     <>
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
@@ -102,7 +147,7 @@ useEffect(() => {
               to="/" 
               className="flex flex-col group transition-transform duration-300 hover:scale-105"
             >
-              <div  className="flex items-baseline relative">
+              <div className="flex items-baseline relative">
                 <span className="text-2xl font-black bg-linear-to-r from-purple-400 via-pink-400 to-purple-400 text-transparent bg-clip-text animate-linear-x">
                   UpNext
                 </span>
@@ -132,60 +177,91 @@ useEffect(() => {
                         }
                         navigate(item.path);
                       }}
-                      className={`relative group flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 ${
+                      className={`relative group flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 hover:scale-105 ${
                         active
                           ? 'bg-linear-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/50'
                           : disabled
                           ? 'opacity-50 cursor-not-allowed text-slate-400'
-                          : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                          : 'text-slate-300 hover:text-white hover:bg-slate-800/50 hover:shadow-lg hover:shadow-purple-500/20'
                       }`}
                     >
                       <Icon className={`w-4 h-4 transition-transform duration-300 ${
-                        active ? '' : 'group-hover:scale-110'
+                        active ? '' : 'group-hover:scale-120 group-hover:rotate-6'
                       }`} />
-                      <span>{item.name}</span>
-                      {item.badge && (
-                        <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-linear-to-r from-pink-500 to-pink-600 rounded-full shadow-lg shadow-pink-500/50 animate-pulse">
+                      <span className="transition-all duration-300">{item.name}</span>
+                      {item.badge > 0 && (
+                        <span className="ml-1 flex items-center justify-center px-2 py-0.5 text-xs font-bold text-white bg-linear-to-r from-pink-500 to-pink-600 rounded-full shadow-lg shadow-pink-500/50 animate-pulse transition-all duration-300">
                           {item.badge}
                         </span>
-                      )}
-                      {!active && !disabled && (
-                        <div className="absolute inset-0 rounded-xl bg-linear-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
                       )}
                     </button>
                   );
                 });
-              })()}
-            </div>
-
+              })()} 
+            </div>   
+                  
             {/* Right Section */}
             <div className="flex items-center gap-3">
               
-              {/* Notifications Button */}
-              <button className="relative flex items-center justify-center w-11 h-11 rounded-xl bg-slate-800/50 text-purple-300 hover:bg-slate-700/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20 hover:scale-105 border border-purple-500/20">
-                <Bell className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 flex h-5 w-5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-5 w-5 bg-linear-to-r from-pink-500 to-pink-600 items-center justify-center text-white text-xs font-bold shadow-lg shadow-pink-500/50">
-                    3
-                  </span>
-                </span>
-              </button>
+              {/* Mobile Quick Actions - Mentors: 2 separate icons, Students: dropdown */}
+              {role === 'mentor' ? (
+                <div className="flex items-center gap-2 lg:hidden">
+                  {/* Requests Icon */}
+                  <button
+                    onClick={() => navigate('/mentor/requests')}
+                    className="relative flex items-center justify-center w-11 h-11 rounded-xl bg-slate-800/50 text-purple-300 hover:bg-slate-700/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20 hover:scale-110 border border-purple-500/20 group"
+                  >
+                    <FileText className="w-5 h-5 transition-transform duration-300 group-hover:scale-125 group-hover:-rotate-12" />
+                    {requestslength > 0 && (
+                      <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-linear-to-r from-pink-500 to-pink-600 rounded-full shadow-lg shadow-pink-500/50 animate-pulse transition-all duration-300">
+                        {requestslength}
+                      </span>
+                    )}
+                  </button>
+
+                  {/* Active Chats Icon */}
+                  <button
+                    onClick={() => navigate('/mentor/chats')}
+                    className="relative flex items-center justify-center w-11 h-11 rounded-xl bg-slate-800/50 text-purple-300 hover:bg-slate-700/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20 hover:scale-110 border border-purple-500/20 group"
+                  >
+                    <MessageSquare className="w-5 h-5 transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12" />
+                    {c > 0 && (
+                      <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-linear-to-r from-pink-500 to-pink-600 rounded-full shadow-lg shadow-pink-500/50 animate-pulse transition-all duration-300">
+                        {c}
+                      </span>
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <div className="relative lg:hidden" ref={mobileQuickRef}>
+                  <button
+                    onClick={() => navigate("/user/messages")}
+                    className="flex items-center justify-center w-11 h-11 rounded-xl bg-slate-800/50 text-purple-300 hover:bg-slate-700/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20 hover:scale-110 border border-purple-500/20 group"
+                  >
+                    <MessageSquare className="w-5 h-5 transition-transform duration-300 group-hover:scale-125" />
+                    {c > 0 && (
+                      <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-linear-to-r from-pink-500 to-pink-600 rounded-full shadow-lg shadow-pink-500/50 animate-pulse transition-all duration-300">
+                        {c}
+                      </span>
+                    )}
+                  </button>
+                </div>
+              )}
 
               {/* Profile Dropdown - Desktop */}
               <div className="relative hidden sm:block" ref={dropdownRef}>
                 <button
                   onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                  className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-slate-800/50 hover:bg-slate-700/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20 border border-purple-500/20 group"
+                  className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-slate-800/50 hover:bg-slate-700/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20 border border-purple-500/20 group hover:scale-105"
                 >
-                  <div className="w-9 h-9 rounded-lg bg-linear-to-br from-purple-600 to-pink-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
+                  <div className="w-9 h-9 rounded-lg bg-linear-to-br from-purple-600 to-pink-600 flex items-center justify-center text-white font-bold text-sm shadow-md transition-transform duration-300 group-hover:scale-110">
                     {userData?.fullName?.charAt(0).toUpperCase() || 'U'}
                   </div>
-                  <span className="font-semibold text-slate-200 text-sm max-w-25 truncate">
+                  <span className="font-semibold text-slate-200 text-sm max-w-25 truncate transition-all duration-300">
                     {userData?.fullName || 'User'}
                   </span>
                   <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${
-                    showProfileDropdown ? 'rotate-180' : ''
+                    showProfileDropdown ? 'rotate-180' : 'group-hover:scale-110'
                   }`} />
                 </button>
 
@@ -223,24 +299,6 @@ useEffect(() => {
                         <User className="w-5 h-5 group-hover:scale-110 transition-transform" />
                         <span className="font-medium">View Profile</span>
                       </Link>}
-                     
-                      
-                      {/* <button
-                        onClick={() => {
-                          setShowProfileDropdown(false);
-                          const profileComplete = (userData?.profileCompletion ?? 0) >= 75;
-                          if (!profileComplete) {
-                            alert('Please complete your profile to access Settings.');
-                            navigate(userData?.role === 'mentor' ? '/profilementor' : '/profile');
-                            return;
-                          }
-                          navigate('/settings');
-                        }}
-                        className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-700/50 hover:text-white transition-all duration-200 group"
-                      >
-                        <Settings className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                        <span className="font-medium">Settings</span>
-                      </button> */}
                       <div className="my-2 h-px bg-linear-to-r from-transparent via-purple-500/30 to-transparent"></div>
                       <button
                         onClick={handleLogout}
@@ -300,18 +358,18 @@ useEffect(() => {
                         }
                         navigate(item.path);
                       }}
-                      className={`relative flex items-center gap-3 px-4 py-4 rounded-xl font-medium transition-all duration-300 ${
+                      className={`relative w-full flex items-center gap-3 px-4 py-4 rounded-xl font-medium transition-all duration-300 group hover:scale-105 origin-left ${
                         active
                           ? 'bg-linear-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/50'
                           : disabled
                           ? 'text-slate-400 opacity-50 cursor-not-allowed'
-                          : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
+                          : 'text-slate-300 hover:bg-slate-700/50 hover:text-white hover:shadow-lg hover:shadow-purple-500/20'
                       }`}
                     >
-                      <Icon className="w-5 h-5" />
-                      <span>{item.name}</span>
-                      {item.badge && (
-                        <span className="ml-auto flex items-center justify-center px-2 py-1 text-xs font-bold text-white bg-linear-to-r from-pink-500 to-pink-600 rounded-full shadow-lg shadow-pink-500/50">
+                      <Icon className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
+                      <span className="transition-all duration-300">{item.name}</span>
+                      {item.badge > 0 && (
+                        <span className="ml-auto flex items-center justify-center px-2 py-1 text-xs font-bold text-white bg-linear-to-r from-pink-500 to-pink-600 rounded-full shadow-lg shadow-pink-500/50 animate-pulse transition-all duration-300">
                           {item.badge}
                         </span>
                       )}
@@ -323,22 +381,21 @@ useEffect(() => {
               <div className="my-4 h-px bg-linear-to-r from-transparent via-purple-500/30 to-transparent"></div>
 
               {/* Mobile Profile Links */}
-              <Link
+              {userData.role=="student"? <Link
                 to="/profile"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="flex items-center gap-3 px-4 py-4 rounded-xl text-slate-300 hover:bg-slate-700/50 hover:text-white font-medium transition-all duration-300"
               >
                 <User className="w-5 h-5" />
                 <span>View Profile</span>
-              </Link>
-              <Link
-                to="/settings"
+              </Link>:<Link
+                to="/profilementor"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="flex items-center gap-3 px-4 py-4 rounded-xl text-slate-300 hover:bg-slate-700/50 hover:text-white font-medium transition-all duration-300"
               >
-                <Settings className="w-5 h-5" />
-                <span>Settings</span>
-              </Link>
+                <User className="w-5 h-5" />
+                <span>View Profile</span>
+              </Link>}
               
               {/* Mobile Logout Button */}
               <button
@@ -352,7 +409,7 @@ useEffect(() => {
           </div>
         )}
       </nav>
-
+  
       <style jsx>{`
         @keyframes slideDown {
           from {

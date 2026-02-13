@@ -30,7 +30,7 @@ function StudentHome() {
   const [recentConversations, setRecentConversations] = useState([]);
   const {completedChats}=useSelector(state=>state.user)
   const [stats, setStats] = useState([
-    { icon: Send, label: 'Active Requests', value: '0', color: 'from-purple-500 to-pink-500' },
+    { icon: Send, label: 'Active Requests',value: '0', color: 'from-purple-500 to-pink-500' },
     { icon: MessageCircle, label: 'Pending Conversations', value: '0', color: 'from-blue-500 to-cyan-500' },
     { icon: Award, label: 'Completed', value:'0', color: 'from-green-500 to-emerald-500' }
   ]);
@@ -118,13 +118,6 @@ function StudentHome() {
       description: 'Find the perfect mentor for you',
       color: 'from-blue-500 to-cyan-500',
       path: '/user/mentors'
-    },
-    {
-      icon: BookOpen,
-      title: 'Resources',
-      description: 'Access learning materials',
-      color: 'from-green-500 to-emerald-500',
-      path: '/user/resources'
     }
   ];
 
@@ -222,60 +215,50 @@ function StudentHome() {
           <div className="max-w-7xl mx-auto">
             
             {/* Hero Section */}
-            <div className="text-center mb-16 animate-fade-in">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 backdrop-blur-xl border border-purple-500/20 mb-6 animate-slide-down">
+            <div className="text-center mb-12 animate-fade-in">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 backdrop-blur-xl border border-purple-500/20 mb-4 animate-slide-down">
                 <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" />
                 <span className="text-purple-300 text-sm font-medium">Welcome to UpNext</span>
               </div>
               
               <h1 className="text-5xl md:text-7xl font-black text-white mb-4 animate-slide-up tracking-tight">
-                
-                  <span className="bg-linear-to-r from-purple-400 via-pink-400 to-purple-400 text-transparent bg-clip-text animate-gradient-x">
+                <span className="bg-linear-to-r from-purple-400 via-pink-400 to-purple-400 text-transparent bg-clip-text animate-gradient-x">
                   {greeting},
                 </span>
                 <br />
                 <span className="text-white">{userData?.fullName || 'Student'}!</span>
               </h1>
               
-              <p className="text-xl text-slate-300 max-w-2xl mx-auto mb-12 animate-slide-up-delayed leading-relaxed">
+              <p className="text-lg text-slate-300 max-w-2xl mx-auto mb-8 animate-slide-up-delayed">
                 Ready to unlock your potential and shape your dream career?
               </p>
 
-              {/* Primary CTA */}
-              <button 
-                onClick={() => {
-                  if (userData?.profileCompletion >=75) navigate('/user/ask-question');
-                  else {
-                    alert('Please complete your profile to ask questions');
-                    navigate('/profile');
-                  }
-                }}
-                className="group relative inline-flex items-center gap-3 px-8 py-4 bg-linear-to-r from-purple-600 to-pink-600 text-white font-bold text-lg rounded-2xl shadow-2xl shadow-purple-500/50 hover:shadow-purple-500/80 transition-all duration-300 hover:scale-105 animate-bounce-slow overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-linear-to-r from-pink-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <Zap className="w-6 h-6 relative z-10 group-hover:rotate-12 transition-transform" />
-                <span className="relative z-10">Ask Your Question Now</span>
-                <ArrowRight className="w-6 h-6 relative z-10 group-hover:translate-x-2 transition-transform" />
-              </button>
-
-              {/* Complete profile banner */}
-              {userData?.profileCompletion < 75 && (
-                <div className="max-w-2xl mx-auto mt-6">
-                  <div className="flex items-center justify-between gap-4 bg-orange-500/10 border border-orange-500/20 text-orange-300 px-4 py-3 rounded-xl">
+              {/* CTA and Profile Banner Combined */}
+              {userData?.profileCompletion < 75 ? (
+                <div className="max-w-xl mx-auto">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-orange-500/10 border border-orange-500/20 text-orange-300 px-6 py-4 rounded-xl">
                     <div>
-                      <strong>Complete your profile to ask questions</strong>
-                      <div className="text-slate-400 text-sm">Add your education, skills and bio to get better mentor matches</div>
+                      <strong className="block text-sm">Complete your profile to ask questions</strong>
+                      <div className="text-slate-400 text-xs mt-1">Add education, skills and bio for better matches</div>
                     </div>
-                    <div>
-                      <button onClick={() => navigate('/profile')} className="px-4 py-2 rounded-lg bg-orange-500 text-white font-medium">Complete Profile</button>
-                    </div>
+                    <button onClick={() => navigate('/profile')} className="px-6 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-medium whitespace-nowrap transition-all">Complete Profile</button>
                   </div>
                 </div>
+              ) : (
+                <button 
+                  onClick={() => navigate('/user/ask-question')}
+                  className="group relative inline-flex items-center gap-3 px-8 py-4 bg-linear-to-r from-purple-600 to-pink-600 text-white font-bold text-lg rounded-2xl shadow-2xl shadow-purple-500/50 hover:shadow-purple-500/80 transition-all duration-300 hover:scale-105 animate-bounce-slow overflow-hidden"
+                >
+                  <div className="absolute inset-0 bg-linear-to-r from-pink-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <Zap className="w-6 h-6 relative z-10" />
+                  <span className="relative z-10">Ask a Question</span>
+                  <ArrowRight className="w-6 h-6 relative z-10 group-hover:translate-x-2 transition-transform" />
+                </button>
               )}
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16 animate-slide-up">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-12 animate-slide-up mt-10">
               {stats.map((stat, index) => {
                 const Icon = stat.icon;
                 return (
@@ -298,15 +281,15 @@ function StudentHome() {
             </div>
 
             {/* Quick Actions */}
-            <div className="mb-16">
-              <h2 className="text-3xl font-black text-white mb-8 flex items-center gap-3">
+            <div className="mb-12">
+              <h2 className="text-2xl font-black text-white mb-6 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                   <TrendingUp className="w-6 h-6 text-white" />
                 </div>
                 Quick Actions
               </h2>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {quickActions.map((action, index) => {
                   const Icon = action.icon;
                   return (
@@ -321,15 +304,15 @@ function StudentHome() {
                       <div className={`absolute inset-0 bg-linear-to-br ${action.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`} />
                       
                       <div className="relative z-10">
-                        <div className={`w-16 h-16 rounded-2xl bg-linear-to-br ${action.color} flex items-center justify-center mb-6 shadow-xl group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
-                          <Icon className="w-8 h-8 text-white" />
+                        <div className={`w-14 h-14 rounded-xl bg-linear-to-br ${action.color} flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
+                          <Icon className="w-7 h-7 text-white" />
                         </div>
                         
-                        <h3 className="text-2xl font-bold text-white mb-3 group-hover:text-transparent group-hover:bg-linear-to-r group-hover:from-purple-400 group-hover:to-pink-400 group-hover:bg-clip-text transition-all duration-300">
+                        <h3 className="text-xl font-bold text-white mb-2 group-hover:text-transparent group-hover:bg-linear-to-r group-hover:from-purple-400 group-hover:to-pink-400 group-hover:bg-clip-text transition-all duration-300">
                           {action.title}
                         </h3>
                         
-                        <p className="text-slate-400 mb-4">
+                        <p className="text-slate-400 text-sm mb-3">
                           {action.description}
                         </p>
                         
@@ -345,11 +328,11 @@ function StudentHome() {
             </div>
 
             {/* Recent Conversations & Motivation */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
               
               {/* Recent Conversations */}
               <div>
-                <h2 className="text-3xl font-black text-white mb-6 flex items-center gap-3">
+                <h2 className="text-2xl font-black text-white mb-6 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-linear-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
                     <MessageCircle className="w-6 h-6 text-white" />
                   </div>
@@ -409,7 +392,7 @@ function StudentHome() {
 
               {/* Motivational Section */}
               <div>
-                <h2 className="text-3xl font-black text-white mb-6 flex items-center gap-3">
+                <h2 className="text-2xl font-black text-white mb-6 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-linear-to-br from-green-500 to-emerald-500 flex items-center justify-center">
                     <Rocket className="w-6 h-6 text-white" />
                   </div>
@@ -417,7 +400,7 @@ function StudentHome() {
                 </h2>
                 
                 {/* Rotating Quote */}
-                <div className="relative h-64 mb-6">
+                <div className="relative h-48 mb-6">
                   {motivationalQuotes.map((item, index) => {
                     const Icon = item.icon;
                     return (
@@ -430,7 +413,7 @@ function StudentHome() {
                         <div className={`w-16 h-16 rounded-2xl bg-linear-to-br ${item.gradient} flex items-center justify-center mb-6 shadow-xl animate-float`}>
                           <Icon className="w-8 h-8 text-white" />
                         </div>
-                        <p className="text-2xl font-bold text-white leading-relaxed">
+                        <p className="text-lg font-bold text-white leading-relaxed">
                           "{item.quote}"
                         </p>
                       </div>
