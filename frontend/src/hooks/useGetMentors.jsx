@@ -2,7 +2,7 @@ import React from "react";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { serverUrl } from "../App";
-import { addMentors} from "../Redux/userSlice";
+import { addMentors} from "../Redux/UserSlice";
 import axios from "axios";
 
 function useGetMentors() {
