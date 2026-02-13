@@ -2,7 +2,6 @@ import React from "react";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { serverUrl } from "../App";
-import { addUserData } from "../Redux/userSlice";
 import axios from "axios";
 import { setCompletedChats, setPendingChats } from "../Redux/chatSlice";
 

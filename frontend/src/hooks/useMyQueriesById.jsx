@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { serverUrl } from "../App";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
-import { addQuestions } from "../Redux/userSlice";
+import { addQuestions } from "../Redux/UserSlice";
 
 function useMyQueriesById() {
     const dispatch=useDispatch()

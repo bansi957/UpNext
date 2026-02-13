@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import { serverUrl } from '../App';
-import { deleteQuestion } from '../Redux/userSlice';
+import { deleteQuestion } from '../Redux/UserSlice';
 import { setActiveChat } from '../Redux/chatSlice';
 
 function ViewQuestion() {

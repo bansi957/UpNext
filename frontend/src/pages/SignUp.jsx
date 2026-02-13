@@ -6,7 +6,7 @@ import { serverUrl } from "../App";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "../../firebase";
 import { useDispatch } from "react-redux";
-import { addUserData } from "../Redux/userSlice";
+import { addUserData } from "../Redux/UserSlice";
 import { Sparkles, GraduationCap, Users, MessageCircle, ArrowRight, UserCircle, Award } from "lucide-react";
 
 const SignUp = () => {

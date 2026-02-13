@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import { serverUrl } from '../App';
-import { addUserData } from '../Redux/userSlice';
+import { addUserData } from '../Redux/UserSlice';
 import { getSocket } from '../../socket';
 
 const NavBar = () => {

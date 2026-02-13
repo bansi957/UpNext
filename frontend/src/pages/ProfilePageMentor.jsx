@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import { serverUrl } from "../App";
-import { addUserData } from "../Redux/userSlice";
+import { addUserData } from "../Redux/UserSlice";
 
 const ProfilePageMentor = () => {
   const navigate = useNavigate();

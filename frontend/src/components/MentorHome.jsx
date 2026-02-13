@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import NavBar from './NavBar';
 import { getSocket } from '../../socket';
-import { addRequest } from '../Redux/userSlice';
+import { addRequest } from '../Redux/UserSlice';
 
 function MentorHome() {
   const { userData } = useSelector(state => state.user);

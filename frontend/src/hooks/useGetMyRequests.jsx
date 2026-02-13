@@ -4,8 +4,7 @@ import { useEffect } from "react";
 import { serverUrl } from "../App";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
-import { addRequest, setRequests } from "../Redux/userSlice";
-import { getSocket } from "../../socket";
+import { setRequests } from "../Redux/UserSlice";
 
 function useGetMyRequestsById() {
     const dispatch=useDispatch()

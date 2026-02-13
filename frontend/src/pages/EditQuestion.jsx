@@ -16,7 +16,7 @@ import {
 import axios from 'axios';
 import { serverUrl } from '../App';
 import NavBar from '../components/NavBar';
-import { addQuestion } from '../Redux/userSlice';
+import { addQuestion } from '../Redux/UserSlice';
 
 function EditQuestion() {
   const navigate = useNavigate();

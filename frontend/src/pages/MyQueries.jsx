@@ -21,7 +21,7 @@ import {
   CheckCircle,
   AlertCircle
 } from "lucide-react";
-import { deleteQuestion } from "../Redux/userSlice";
+import { deleteQuestion } from "../Redux/UserSlice";
 import { setActiveChat } from "../Redux/chatSlice";
 
 function MyQueries() {
