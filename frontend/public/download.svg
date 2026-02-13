@@ -1,0 +1,13 @@
+<svg width="300" height="80" viewBox="0 0 300 80" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="upnextGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#a855f7"></stop>
+      <stop offset="50%" stop-color="#ec4899"></stop>
+      <stop offset="100%" stop-color="#a855f7"></stop>
+    </linearGradient>
+  </defs>
+
+  <text x="50%" y="55%" text-anchor="middle" dominant-baseline="middle" font-size="48" font-family="Poppins, Arial, sans-serif" font-weight="900" fill="url(#upnextGradient)">
+    UpNext
+  </text>
+</svg>
