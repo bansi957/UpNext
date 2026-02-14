@@ -588,7 +588,7 @@ const handleCompleteChat = async () => {
 
                     {/* Message Input */}
                     <div className="flex items-center gap-3">
-                      <label className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400 cursor-pointer transition" title="Attach file">
+                      <label className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400 cursor-pointer transition flex-shrink-0" title="Attach file">
                         <Paperclip className="w-5 h-5" />
                         <input
                           ref={fileInputRef}
@@ -604,12 +604,12 @@ const handleCompleteChat = async () => {
                         onKeyPress={(e) => e.key === 'Enter' && !uploading && handleSendMessage()}
                         placeholder="Type a message..."
                         disabled={uploading}
-                        className="flex-1 px-4 py-2 rounded-xl bg-slate-700/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-50"
+                        className="flex-1 px-4 py-2 rounded-xl bg-slate-700/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-50 min-w-0"
                       />
                       <button
                         onClick={handleSendMessage}
                         disabled={uploading || (!messageInput.trim() && !selectedFile)}
-                        className="p-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="p-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                       >
                         {uploading ? (
                           <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -724,8 +724,8 @@ const handleCompleteChat = async () => {
                     )}
 
                     {/* Mobile Input */}
-                    <div className="border-t border-slate-700/50 bg-slate-800/50 p-4 flex items-center gap-2">
-                      <label className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400 cursor-pointer transition" title="Attach file">
+                    <div className="border-t border-slate-700/50 bg-slate-800/50 p-4 flex items-center gap-2 w-full">
+                      <label className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400 cursor-pointer transition flex-shrink-0" title="Attach file">
                         <Paperclip className="w-5 h-5" />
                         <input
                           ref={fileInputRef}
@@ -741,12 +741,12 @@ const handleCompleteChat = async () => {
                         onKeyPress={(e) => e.key === 'Enter' && !uploading && handleSendMessage()}
                         placeholder="Type a message..."
                         disabled={uploading}
-                        className="flex-1 px-4 py-2 rounded-xl bg-slate-700/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-50"
+                        className="flex-1 px-4 py-2 rounded-xl bg-slate-700/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-50 min-w-0"
                       />
                       <button
                         onClick={handleSendMessage}
                         disabled={uploading || (!messageInput.trim() && !selectedFile)}
-                        className="p-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="p-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                       >
                         {uploading ? (
                           <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
