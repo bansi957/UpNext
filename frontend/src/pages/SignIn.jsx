@@ -57,75 +57,75 @@ const SignIn = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-linear-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+    <div className="min-h-screen lg:h-screen flex flex-col lg:flex-row bg-linear-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-x-hidden">
       
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-32 -right-32 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-pulse delay-700"></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-blue-500/20 rounded-full blur-2xl animate-pulse-slow"></div>
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-pink-500/20 rounded-full blur-3xl animate-pulse delay-700"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-56 h-56 bg-blue-500/20 rounded-full blur-2xl animate-pulse-slow"></div>
         <div className="absolute inset-0 bg-[linear-gradient(rgba(147,51,234,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(147,51,234,0.03)_1px,transparent_1px)] bg-size-[50px_50px]" />
       </div>
 
       {/* LEFT - BRAND SECTION */}
-      <div className="relative w-full lg:w-1/2 min-h-[40vh] lg:min-h-screen flex items-center justify-center p-8 lg:p-16">
+      <div className="relative w-full lg:w-1/2 flex items-center justify-center p-4 lg:p-6 min-h-[50vh] lg:min-h-screen">
         <div className="relative z-10 w-full max-w-lg animate-fade-in">
           {/* Logo Section */}
-          <div className="mb-12">
+          <div className="mb-6">
             <div className="flex items-baseline mb-4">
-              <span className="text-6xl lg:text-8xl font-black bg-linear-to-r from-purple-400 via-pink-400 to-purple-400 text-transparent bg-clip-text animate-gradient-x">
+              <span className="text-4xl lg:text-5xl font-black bg-linear-to-r from-purple-400 via-pink-400 to-purple-400 text-transparent bg-clip-text animate-gradient-x">
                 UpNext
               </span>
             </div>
-            <div className="flex items-center space-x-2 mb-8">
-              <div className="h-1 w-16 bg-linear-to-r from-purple-400 to-pink-400 rounded-full"></div>
-              <p className="text-2xl lg:text-3xl text-white/90 font-bold">
+            <div className="flex items-center space-x-2 mb-4">
+              <div className="h-1 w-12 bg-linear-to-r from-purple-400 to-pink-400 rounded-full"></div>
+              <p className="text-lg lg:text-xl text-white/90 font-bold">
                 From <span className="text-purple-400">Campus</span> to <span className="text-pink-400">Career</span>
               </p>
             </div>
           </div>
 
           {/* Feature Cards */}
-          <div className="space-y-4">
-            <div className="group bg-slate-800/40 backdrop-blur-xl rounded-2xl p-5 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-purple-500/20">
-              <div className="flex items-center space-x-4">
-                <div className="w-14 h-14 rounded-xl bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform shadow-lg">
-                  <GraduationCap className="w-7 h-7 text-white" />
+          <div className="space-y-2">
+            <div className="group bg-slate-800/40 backdrop-blur-xl rounded-lg p-3 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-purple-500/20">
+              <div className="flex items-center space-x-2">
+                <div className="w-10 h-10 rounded-lg bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform shadow-lg">
+                  <GraduationCap className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-white font-bold text-lg mb-1">Real-World Guidance</h3>
-                  <p className="text-slate-300 text-sm">Connect with experienced professionals</p>
+                  <h3 className="text-white font-bold text-sm mb-0.5">Real-World Guidance</h3>
+                  <p className="text-slate-300 text-xs">Connect with experienced professionals</p>
                 </div>
               </div>
             </div>
 
-            <div className="group bg-slate-800/40 backdrop-blur-xl rounded-2xl p-5 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-purple-500/20">
-              <div className="flex items-center space-x-4">
-                <div className="w-14 h-14 rounded-xl bg-linear-to-br from-blue-500 to-cyan-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform shadow-lg">
-                  <Users className="w-7 h-7 text-white" />
+            <div className="group bg-slate-800/40 backdrop-blur-xl rounded-lg p-3 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-purple-500/20">
+              <div className="flex items-center space-x-2">
+                <div className="w-10 h-10 rounded-lg bg-linear-to-br from-blue-500 to-cyan-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform shadow-lg">
+                  <Users className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-white font-bold text-lg mb-1">Industry Experience</h3>
-                  <p className="text-slate-300 text-sm">Learn from mentors in top companies</p>
+                  <h3 className="text-white font-bold text-sm mb-0.5">Industry Experience</h3>
+                  <p className="text-slate-300 text-xs">Learn from mentors in top companies</p>
                 </div>
               </div>
             </div>
 
-            <div className="group bg-slate-800/40 backdrop-blur-xl rounded-2xl p-5 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-purple-500/20">
-              <div className="flex items-center space-x-4">
-                <div className="w-14 h-14 rounded-xl bg-linear-to-br from-green-500 to-emerald-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform shadow-lg">
-                  <MessageCircle className="w-7 h-7 text-white" />
+            <div className="group bg-slate-800/40 backdrop-blur-xl rounded-lg p-3 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-purple-500/20">
+              <div className="flex items-center space-x-2">
+                <div className="w-10 h-10 rounded-lg bg-linear-to-br from-green-500 to-emerald-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform shadow-lg">
+                  <MessageCircle className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-white font-bold text-lg mb-1">1-on-1 Conversations</h3>
-                  <p className="text-slate-300 text-sm">Personalized guidance for your goals</p>
+                  <h3 className="text-white font-bold text-sm mb-0.5">1-on-1 Conversations</h3>
+                  <p className="text-slate-300 text-xs">Personalized guidance for your goals</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Decorative Element */}
-          <div className="mt-12 flex items-center space-x-2 text-purple-300/60 text-sm">
+          <div className="mt-4 flex items-center space-x-2 text-purple-300/60 text-xs">
             <Sparkles className="w-4 h-4" />
             <span>Join 10,000+ students and mentors</span>
           </div>
@@ -133,26 +133,26 @@ const SignIn = () => {
       </div>
 
       {/* RIGHT - FORM SECTION */}
-      <div className="relative w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12">
+      <div className="relative w-full lg:w-1/2 flex items-center justify-center p-4 lg:p-6 min-h-screen lg:min-h-auto">
         <div className="w-full max-w-md animate-slide-up">
           {/* Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-linear-to-br from-purple-600 to-pink-600 rounded-2xl mb-4 shadow-2xl shadow-purple-500/50 animate-float">
-              <ArrowRight className="w-8 h-8 text-white" />
+          <div className="text-center mb-3">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-linear-to-br from-purple-600 to-pink-600 rounded-lg mb-2 shadow-2xl shadow-purple-500/50 animate-float">
+              <ArrowRight className="w-6 h-6 text-white" />
             </div>
-            <h2 className="text-4xl lg:text-5xl font-black text-white mb-2">
+            <h2 className="text-2xl lg:text-3xl font-black text-white mb-1">
               Welcome Back!
             </h2>
-            <p className="text-slate-300 text-lg">
+            <p className="text-slate-300 text-sm">
               Sign in to continue your journey with UpNext
             </p>
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-3">
             {/* Email Input */}
             <div>
-              <label className="block text-sm font-bold text-slate-200 mb-2">
+              <label className="block text-xs font-bold text-slate-200 mb-1">
                 Email Address
               </label>
               <input
@@ -161,14 +161,14 @@ const SignIn = () => {
                 name="email"
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
-                className="w-full px-4 py-4 rounded-xl border-2 border-slate-700 bg-slate-800/50 backdrop-blur-xl focus:border-purple-500 focus:outline-none transition-all duration-200 text-white placeholder:text-slate-500"
+                className="w-full px-3 py-2 rounded-lg border-2 border-slate-700 bg-slate-800/50 backdrop-blur-xl focus:border-purple-500 focus:outline-none transition-all duration-200 text-white placeholder:text-slate-500 text-sm"
                 required
               />
             </div>
 
             {/* Password Input */}
             <div>
-              <label className="block text-sm font-bold text-slate-200 mb-2">
+              <label className="block text-xs font-bold text-slate-200 mb-1">
                 Password
               </label>
               <div className="relative">
@@ -177,7 +177,7 @@ const SignIn = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
-                  className="w-full px-4 py-4 pr-12 rounded-xl border-2 border-slate-700 bg-slate-800/50 backdrop-blur-xl focus:border-purple-500 focus:outline-none transition-all duration-200 text-white placeholder:text-slate-500"
+                  className="w-full px-3 py-2 pr-10 rounded-lg border-2 border-slate-700 bg-slate-800/50 backdrop-blur-xl focus:border-purple-500 focus:outline-none transition-all duration-200 text-white placeholder:text-slate-500 text-sm"
                   required
                 />
                 <button
@@ -185,53 +185,53 @@ const SignIn = () => {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-purple-400 transition-colors"
                 >
-                  {showPassword ? <FaRegEye size={20} /> : <FaRegEyeSlash size={20} />}
+                  {showPassword ? <FaRegEye size={18} /> : <FaRegEyeSlash size={18} />}
                 </button>
               </div>
             </div>
 
             {/* Error Message */}
             {error && (
-              <div className="flex items-center space-x-2 p-4 bg-red-500/10 border-2 border-red-500/30 rounded-xl animate-shake backdrop-blur-xl">
-                <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center shrink-0">
+              <div className="flex items-center space-x-2 p-2 bg-red-500/10 border-2 border-red-500/30 rounded-lg animate-shake backdrop-blur-xl">
+                <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center shrink-0">
                   <span className="text-white text-xs font-bold">!</span>
                 </div>
-                <p className="text-sm text-red-300 font-medium">{error}</p>
+                <p className="text-xs text-red-300 font-medium">{error}</p>
               </div>
             )}
 
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full py-4 rounded-xl font-bold text-white bg-linear-to-r from-purple-600 to-pink-600 hover:shadow-2xl hover:shadow-purple-500/50 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center justify-center space-x-2 group"
+              className="w-full py-2 rounded-lg font-bold text-sm text-white bg-linear-to-r from-purple-600 to-pink-600 hover:shadow-2xl hover:shadow-purple-500/50 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center justify-center space-x-2 group mt-2"
             >
               <span>Sign In</span>
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
           </form>
 
           {/* Divider */}
-          <div className="flex items-center my-6">
+          <div className="flex items-center my-2">
             <div className="flex-1 h-px bg-linear-to-r from-transparent via-slate-600 to-transparent"></div>
-            <span className="px-4 text-sm font-medium text-slate-400">OR</span>
+            <span className="px-2 text-xs font-medium text-slate-400">OR</span>
             <div className="flex-1 h-px bg-linear-to-r from-transparent via-slate-600 to-transparent"></div>
           </div>
 
           {/* Google Auth Button */}
           <button
             onClick={handleGoogleAuth}
-            className="w-full flex items-center justify-center space-x-3 py-4 px-4 border-2 border-slate-700 bg-slate-800/50 backdrop-blur-xl rounded-xl font-semibold text-slate-200 hover:bg-slate-700/50 hover:border-slate-600 transition-all duration-200 group"
+            className="w-full flex items-center justify-center space-x-2 py-2 px-3 border-2 border-slate-700 bg-slate-800/50 backdrop-blur-xl rounded-lg font-semibold text-xs text-slate-200 hover:bg-slate-700/50 hover:border-slate-600 transition-all duration-200 group"
           >
            <img
                src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
                 alt="google"
-              className="w-5 h-5 group-hover:scale-110 transition-transform"
+              className="w-4 h-4 group-hover:scale-110 transition-transform"
             />
-            <span>Continue with Google</span>
+            <span>Sign in</span>
           </button>
 
           {/* Sign Up Link */}
-          <p className="mt-8 text-center text-slate-300">
+          <p className="mt-2 text-center text-slate-300 text-xs">
             Don't have an account?{" "}
             <a
               href="/signup"
