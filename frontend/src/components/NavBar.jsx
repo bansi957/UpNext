@@ -390,19 +390,9 @@ const {pendingChats}=useSelector(state=>state.chat)
               {/* Mobile Menu Button */}
               <button
                 onClick={() => {
-                  const profileComplete = (userData?.profileCompletion ?? 0) >= 75;
-                  if (!profileComplete) {
-                    alert('Please complete your profile to access navigation.');
-                    navigate(userData?.role === 'mentor' ? '/profilementor' : '/profile');
-                    return;
-                  }
                   setIsMobileMenuOpen(!isMobileMenuOpen);
                 }}
-                className={`lg:hidden flex items-center justify-center w-11 h-11 rounded-xl text-white hover:shadow-lg hover:shadow-purple-500/50 transition-all duration-300 ${
-                  ((userData?.profileCompletion ?? 0) >= 75)
-                    ? 'bg-linear-to-br from-purple-600 to-pink-600 hover:scale-105 cursor-pointer'
-                    : 'bg-slate-700/50 opacity-50 cursor-not-allowed'
-                }`}
+                className={`lg:hidden flex items-center justify-center w-11 h-11 rounded-xl text-white hover:shadow-lg hover:shadow-purple-500/50 transition-all duration-300 bg-linear-to-br from-purple-600 to-pink-600 hover:scale-105 cursor-pointer`}
               >
                 {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
@@ -414,84 +404,123 @@ const {pendingChats}=useSelector(state=>state.chat)
         {isMobileMenuOpen && (
           <div className="lg:hidden bg-slate-800/95 backdrop-blur-xl border-t border-purple-500/20 shadow-xl animate-slideDown max-h-[calc(100vh-5rem)] overflow-y-auto">
             <div className="px-4 py-6 space-y-2">
-              {/* Mobile Profile Info */}
-              <div className="flex items-center gap-3 p-4 mb-4 rounded-xl bg-linear-to-br from-purple-600 to-pink-600 relative overflow-hidden">
-                <div className="absolute inset-0 bg-black/20" />
-                <div className="relative w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold shadow-md">
-                  {userData?.fullName?.charAt(0).toUpperCase() || 'U'}
-                </div>
-                <div className="relative">
-                  <p className="font-bold text-white">{userData?.fullName || 'User'}</p>
-                  <p className="text-sm text-purple-100 capitalize">{role || 'Student'}</p>
-                </div>
-              </div>
-
-              {/* Mobile Nav Items */}
               {(() => {
                 const profileComplete = (userData?.profileCompletion ?? 0) >= 75;
-                return navItems.map((item) => {
-                  const Icon = item.icon;
-                  const active = isActive(item.path) && profileComplete;
-                  const disabled = !profileComplete;
+                
+                if (!profileComplete) {
+                  // Show only Profile and Logout for incomplete profiles
                   return (
-                    <button
-                      key={item.path}
-                      onClick={() => {
-                        setIsMobileMenuOpen(false);
-                        if (!profileComplete) {
-                          alert('Please complete your profile to access this.');
-                          navigate(userData?.role === 'mentor' ? '/profilementor' : '/profile');
-                          return;
-                        }
-                        navigate(item.path);
-                      }}
-                      className={`relative w-full flex items-center gap-3 px-4 py-4 rounded-xl font-medium transition-all duration-300 group hover:scale-105 origin-left ${
-                        active
-                          ? 'bg-linear-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/50'
-                          : disabled
-                          ? 'text-slate-400 opacity-50 cursor-not-allowed'
-                          : 'text-slate-300 hover:bg-slate-700/50 hover:text-white hover:shadow-lg hover:shadow-purple-500/20'
-                      }`}
-                    >
-                      <Icon className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
-                      <span className="transition-all duration-300">{item.name}</span>
-                      {item.badge > 0 && (
-                        <span className="ml-auto flex items-center justify-center px-2 py-1 text-xs font-bold text-white bg-linear-to-r from-pink-500 to-pink-600 rounded-full shadow-lg shadow-pink-500/50 animate-pulse transition-all duration-300">
-                          {item.badge}
-                        </span>
+                    <>
+                      {/* Mobile Profile Links */}
+                      {userData.role == "student" ? (
+                        <Link
+                          to="/profile"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="flex items-center gap-3 px-4 py-4 rounded-xl text-slate-300 hover:bg-slate-700/50 hover:text-white font-medium transition-all duration-300"
+                        >
+                          <User className="w-5 h-5" />
+                          <span>View Profile</span>
+                        </Link>
+                      ) : (
+                        <Link
+                          to="/profilementor"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="flex items-center gap-3 px-4 py-4 rounded-xl text-slate-300 hover:bg-slate-700/50 hover:text-white font-medium transition-all duration-300"
+                        >
+                          <User className="w-5 h-5" />
+                          <span>View Profile</span>
+                        </Link>
                       )}
-                    </button>
+
+                      {/* Mobile Logout Button */}
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-3 px-4 py-4 rounded-xl text-red-400 hover:bg-red-500/10 font-medium transition-all duration-300 border-2 border-red-500/20 hover:border-red-500/40 mt-2"
+                      >
+                        <LogOut className="w-5 h-5" />
+                        <span>Logout</span>
+                      </button>
+                    </>
                   );
-                });
-              })()} 
+                }
 
-              <div className="my-4 h-px bg-linear-to-r from-transparent via-purple-500/30 to-transparent"></div>
+                // Show full menu for complete profiles
+                return (
+                  <>
+                    {/* Mobile Profile Info */}
+                    <div className="flex items-center gap-3 p-4 mb-4 rounded-xl bg-linear-to-br from-purple-600 to-pink-600 relative overflow-hidden">
+                      <div className="absolute inset-0 bg-black/20" />
+                      <div className="relative w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold shadow-md">
+                        {userData?.fullName?.charAt(0).toUpperCase() || 'U'}
+                      </div>
+                      <div className="relative">
+                        <p className="font-bold text-white">{userData?.fullName || 'User'}</p>
+                        <p className="text-sm text-purple-100 capitalize">{role || 'Student'}</p>
+                      </div>
+                    </div>
 
-              {/* Mobile Profile Links */}
-              {userData.role=="student"? <Link
-                to="/profile"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center gap-3 px-4 py-4 rounded-xl text-slate-300 hover:bg-slate-700/50 hover:text-white font-medium transition-all duration-300"
-              >
-                <User className="w-5 h-5" />
-                <span>View Profile</span>
-              </Link>:<Link
-                to="/profilementor"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center gap-3 px-4 py-4 rounded-xl text-slate-300 hover:bg-slate-700/50 hover:text-white font-medium transition-all duration-300"
-              >
-                <User className="w-5 h-5" />
-                <span>View Profile</span>
-              </Link>}
-              
-              {/* Mobile Logout Button */}
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-4 py-4 rounded-xl text-red-400 hover:bg-red-500/10 font-medium transition-all duration-300 border-2 border-red-500/20 hover:border-red-500/40 mt-2"
-              >
-                <LogOut className="w-5 h-5" />
-                <span>Logout</span>
-              </button>
+                    {/* Mobile Nav Items */}
+                    {navItems.map((item) => {
+                      const Icon = item.icon;
+                      const active = isActive(item.path);
+                      return (
+                        <button
+                          key={item.path}
+                          onClick={() => {
+                            setIsMobileMenuOpen(false);
+                            navigate(item.path);
+                          }}
+                          className={`relative w-full flex items-center gap-3 px-4 py-4 rounded-xl font-medium transition-all duration-300 group hover:scale-105 origin-left ${
+                            active
+                              ? 'bg-linear-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/50'
+                              : 'text-slate-300 hover:bg-slate-700/50 hover:text-white hover:shadow-lg hover:shadow-purple-500/20'
+                          }`}
+                        >
+                          <Icon className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
+                          <span className="transition-all duration-300">{item.name}</span>
+                          {item.badge > 0 && (
+                            <span className="ml-auto flex items-center justify-center px-2 py-1 text-xs font-bold text-white bg-linear-to-r from-pink-500 to-pink-600 rounded-full shadow-lg shadow-pink-500/50 animate-pulse transition-all duration-300">
+                              {item.badge}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+
+                    <div className="my-4 h-px bg-linear-to-r from-transparent via-purple-500/30 to-transparent"></div>
+
+                    {/* Mobile Profile Links */}
+                    {userData.role == "student" ? (
+                      <Link
+                        to="/profile"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-4 rounded-xl text-slate-300 hover:bg-slate-700/50 hover:text-white font-medium transition-all duration-300"
+                      >
+                        <User className="w-5 h-5" />
+                        <span>View Profile</span>
+                      </Link>
+                    ) : (
+                      <Link
+                        to="/profilementor"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-4 rounded-xl text-slate-300 hover:bg-slate-700/50 hover:text-white font-medium transition-all duration-300"
+                      >
+                        <User className="w-5 h-5" />
+                        <span>View Profile</span>
+                      </Link>
+                    )}
+
+                    {/* Mobile Logout Button */}
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-3 px-4 py-4 rounded-xl text-red-400 hover:bg-red-500/10 font-medium transition-all duration-300 border-2 border-red-500/20 hover:border-red-500/40 mt-2"
+                    >
+                      <LogOut className="w-5 h-5" />
+                      <span>Logout</span>
+                    </button>
+                  </>
+                );
+              })()}
             </div>
           </div>
         )}
