@@ -275,8 +275,8 @@ const SignUp = () => {
             className="w-full flex items-center justify-center space-x-3 py-4 px-4 border-2 border-slate-700 bg-slate-800/50 backdrop-blur-xl rounded-xl font-semibold text-slate-200 hover:bg-slate-700/50 hover:border-slate-600 transition-all duration-200 group"
           >
             <img
-              src="https://www.svgrepo.com/show/475656/google-color.svg"
-              alt="Google"
+               src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                alt="google"
               className="w-5 h-5 group-hover:scale-110 transition-transform"
             />
             <span>Continue with Google</span>
