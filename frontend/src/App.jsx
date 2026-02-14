@@ -24,7 +24,7 @@ import useGetMyRequestsById from "./hooks/useGetMyRequests";
 import useGetChats from "./hooks/useGetChats";
 import useGetMentorChats from "./hooks/useGetMentorChats";
 
-export const serverUrl = "http://localhost:3000";
+export const serverUrl = "https://upnext-rtl3.onrender.com";
 
 function App() {
   useGetCurrentUser();
