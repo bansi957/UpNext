@@ -3,7 +3,7 @@ const validator = require("validator");
 const  User  = require("../models/user_model");
 const bcrypt = require("bcryptjs");
 const jwtToken=require("jsonwebtoken");
-const uploadToCloudinary = require("../../../food delivery app/backend/utils/cloudinary");
+const uploadToCloudinary = require("../utils/cloudinary")
 
 const signUp=async (req,res)=>{
     try {
