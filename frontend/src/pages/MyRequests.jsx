@@ -13,20 +13,20 @@ function MyRequests() {
   const dispatch = useDispatch();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("pending"); // all | pending | accepted
+  const [filter, setFilter] = useState("all"); // all | pending | accepted | completed | specific
 
   useEffect(() => {
     const fetchRequests = async () => {
       try {
+        setLoading(true);
         const res1 = await axios.get(
           `${serverUrl}/api/questions/mentor-requests`,
-          { withCredentials: true },
+          { 
+            params: { filter },
+            withCredentials: true 
+          },
         );
-       
 
-        // // Properly combine both arrays
-        // const broadcastQuestions = res1.data || [];
-        // const assignedQuestions = res2.data || [];
         const allRequests = res1.data
 
         setRequests(allRequests);
@@ -38,7 +38,7 @@ function MyRequests() {
     };
 
     fetchRequests();
-  }, []);
+  }, [filter]);
 
   const formatDate = (iso) => {
     if (!iso) return "";
@@ -81,9 +81,8 @@ function MyRequests() {
   }
  
 
-  const filtered = requests.filter((r) =>
-    filter === "all" ? true : (r.status === filter || r.questionType==filter),
-  );
+  // Backend already handles filtering, so just use requests directly
+  const filtered = requests;
 
 
    useEffect(()=>{
@@ -170,6 +169,12 @@ function MyRequests() {
               >
                 Accepted
               </button>
+              <button
+                onClick={() => setFilter("completed")}
+                className={`px-3 sm:px-4 py-2 text-xs sm:text-sm rounded-xl whitespace-nowrap ${filter === "completed" ? "bg-linear-to-r from-blue-600 to-cyan-600 text-white shadow-lg" : "bg-slate-800/50 text-slate-300 border border-slate-700 hover:border-purple-500/40"}`}
+              >
+                Completed
+              </button>
             </div>
           </div>
 
@@ -227,9 +232,15 @@ function MyRequests() {
                     </div>
                     <div className="text-sm shrink-0">
                       <span
-                        className={`px-2 sm:px-3 py-1 rounded-full text-xs font-semibold ${req.status === "accepted" ? "bg-linear-to-r from-green-400 to-emerald-400 text-white" : "bg-yellow-700/10 text-yellow-300 border border-yellow-500/20"}`}
+                        className={`px-2 sm:px-3 py-1 rounded-full text-xs font-semibold ${
+                          req.status === "accepted"
+                            ? "bg-linear-to-r from-green-400 to-emerald-400 text-white"
+                            : req.status === "completed"
+                            ? "bg-linear-to-r from-blue-400 to-cyan-400 text-white"
+                            : "bg-yellow-700/10 text-yellow-300 border border-yellow-500/20"
+                        }`}
                       >
-                        {req.status === "accepted" ? "Accepted" : "Pending"}
+                        {req.status === "accepted" ? "Accepted" : req.status === "completed" ? "Completed" : "Pending"}
                       </span>
                     </div>
                   </div>

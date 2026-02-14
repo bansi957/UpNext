@@ -164,6 +164,34 @@ function MentorProfilePage() {
                     <MessageCircle className="w-5 h-5 transition-transform group-hover:scale-110" />
                     Ask Question
                   </button>
+
+                  {/* Social Media Links */}
+                  {(mentor.github || mentor.linkedin) && (
+                    <div className="flex gap-4 mt-6">
+                      {mentor.github && (
+                        <a
+                          href={mentor.github}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-3 rounded-lg bg-slate-700/50 hover:bg-slate-600 transition-all duration-300 border border-slate-600 hover:border-slate-500 group"
+                          title="GitHub Profile"
+                        >
+                          <Github className="w-6 h-6 text-slate-300 group-hover:text-white transition-colors" />
+                        </a>
+                      )}
+                      {mentor.linkedin && (
+                        <a
+                          href={mentor.linkedin}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-3 rounded-lg bg-blue-600/20 hover:bg-blue-600/40 transition-all duration-300 border border-blue-500/30 hover:border-blue-500/60 group"
+                          title="LinkedIn Profile"
+                        >
+                          <Linkedin className="w-6 h-6 text-blue-400 group-hover:text-blue-300 transition-colors" />
+                        </a>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

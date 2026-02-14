@@ -51,7 +51,9 @@ function ViewQuestion() {
     try {
       const result=await axios.get(`${serverUrl}/api/chats/question/${questionId}`,{withCredentials:true})
       dispatch(setActiveChat(result.data))
-      navigate(`/user/messages`)
+      // Navigate based on user role
+      const path = userData?.role === 'mentor' ? '/mentor/chats' : '/user/messages'
+      navigate(path)
     } catch (error) {
       console.log(error)
     }

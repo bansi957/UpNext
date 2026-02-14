@@ -396,41 +396,41 @@ function MentorHome() {
                     <p className="text-slate-500 text-sm mt-2">Accept requests to start conversations with students</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-4 overflow-x-hidden">
                     {activeChats.map((chat) => (
                       <div
                         key={chat._id}
-                        className="group bg-slate-800/40 backdrop-blur-xl rounded-2xl p-5 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-purple-500/10 cursor-pointer"
+                        className="group bg-slate-800/40 backdrop-blur-xl rounded-2xl p-4 md:p-5 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 md:hover:scale-105 hover:shadow-xl hover:shadow-purple-500/10 cursor-pointer overflow-hidden"
                       >
-                        <div className="flex items-start gap-4">
-                          <div className="relative">
+                        <div className="flex items-start gap-3 md:gap-4 min-w-0">
+                          <div className="relative flex-shrink-0">
                             {chat.studentImage ? (
                               <img
                                 src={chat.studentImage}
                                 alt={chat.studentName}
-                                className="w-12 h-12 rounded-xl object-cover shadow-md"
+                                className="w-10 md:w-12 h-10 md:h-12 rounded-xl object-cover shadow-md"
                               />
                             ) : (
-                              <div className="w-12 h-12 rounded-xl bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold shadow-md">
+                              <div className="w-10 md:w-12 h-10 md:h-12 rounded-xl bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold shadow-md text-xs md:text-sm">
                                 {chat.studentName?.charAt(0).toUpperCase()}
                               </div>
                             )}
                           </div>
                           
-                          <div className="flex-1">
-                            <div className="flex items-start justify-between mb-1">
-                              <h3 className="font-bold text-white group-hover:text-purple-400 transition-colors">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2 mb-1">
+                              <h3 className="font-bold text-white group-hover:text-purple-400 transition-colors truncate text-sm md:text-base">
                                 {chat.studentName}
                               </h3>
-                              <span className="text-xs text-slate-500">{formatDate(chat.lastMessageTime)}</span>
+                              <span className="text-xs text-slate-500 flex-shrink-0">{formatDate(chat.lastMessageTime)}</span>
                             </div>
-                            <p className="text-xs text-purple-300 mb-2">{chat.questionTitle || 'Conversation'}</p>
-                            <p className="text-sm text-slate-400 line-clamp-1">{chat.lastMessage || 'No messages yet'}</p>
-                            <div className="flex items-center gap-2 mt-3">
+                            <p className="text-xs text-purple-300 mb-2 truncate">{chat.questionTitle || 'Conversation'}</p>
+                            <p className="text-xs md:text-sm text-slate-400 line-clamp-1">{chat.lastMessage || 'No messages yet'}</p>
+                            <div className="flex items-center gap-2 mt-3 flex-wrap">
                               <span className="text-xs text-slate-500">Chat active</span>
                               <button 
                                 onClick={() => handleChatOpen(chat)}
-                                className="ml-auto flex items-center gap-1 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-medium transition-all"
+                                className="ml-auto flex items-center gap-1 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-medium transition-all flex-shrink-0"
                               >
                                 Open
                                 <ArrowRight className="w-3 h-3" />

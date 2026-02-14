@@ -47,54 +47,81 @@ const NavBar = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const {pendingChats}=useSelector(state=>state.chat)
+const {pendingChats}=useSelector(state=>state.chat)
   const [c,setC]=useState(0);
+  
+  // Recalculate unread count based on pendingChats
   useEffect(() => {
-  if (!pendingChats || !Array.isArray(pendingChats)) return;
-
-  let totalUnread = 0;
-
-  pendingChats.forEach(chat => {
-    if (chat?.messages && Array.isArray(chat.messages)) {
-      chat.messages.forEach(msg => {
-        if (msg.sender !== userData?._id && !msg.isRead) {
-          totalUnread += 1;
-        }
-      });
+    if (!pendingChats || !Array.isArray(pendingChats)) {
+      setC(0);
+      return;
     }
-  });
 
-  setC(totalUnread);
+    let totalUnread = 0;
 
-}, [pendingChats, userData?._id]);
+    pendingChats.forEach(chat => {
+      if (chat?.messages && Array.isArray(chat.messages)) {
+        chat.messages.forEach(msg => {
+          if (msg.sender !== userData?._id && !msg.isRead) {
+            totalUnread += 1;
+          }
+        });
+      }
+    });
+
+    setC(totalUnread);
+
+  }, [pendingChats, userData?._id]);
 
 
 
   useEffect(()=>{
     const socket=getSocket()
-     socket.on('send-message', ({ messages,sender, mentorId, studentId, chatId, mentorUnreadCount, studentUnreadCount }) => {
-      const t=pendingChats.find(c=>c._id==chatId)
-      if(t){
-        // When STUDENT sends a message, DECREMENT for student, INCREMENT for mentor
-        if (sender=="student") {
-          // Student sending = reset their unread to 0
-          setC(prev => {
-            // Get current unread for this chat from pendingChats
-            const chatUnread = t?.messages?.filter(msg => msg.sender !== userData?._id && !msg.isRead).length || 0;
-            // Decrement by that amount (since student just replied, all mentor's unread messages are now read)
-            return Math.max(0, prev - chatUnread);
-          });
-        }
-        
-        // When MENTOR sends a message, INCREMENT for student
-        if (sender=="mentor" && studentId==userData?._id) {
-          setC(prev => prev + 1)
-        }
+    
+    socket.on('send-message', ({ messages, sender, mentorId, studentId, chatId, mentorUnreadCount, studentUnreadCount }) => {
+      // Update unread count based on current user role and backend's unread counts
+      if (userData?.role === 'mentor' && mentorUnreadCount !== undefined) {
+        // For mentors: use mentorUnreadCount from backend
+        setC(mentorUnreadCount);
+      } else if (userData?.role === 'student' && studentUnreadCount !== undefined) {
+        // For students: use studentUnreadCount from backend
+        setC(studentUnreadCount);
       }
     });
+
+    // Listen for when messages are marked as read
+    socket.on('messages-read', ({ mentorUnreadCount, studentUnreadCount, readBy }) => {
+      if (userData?.role === 'mentor' && mentorUnreadCount !== undefined) {
+        setC(mentorUnreadCount);
+      } else if (userData?.role === 'student' && studentUnreadCount !== undefined) {
+        setC(studentUnreadCount);
+      }
+    });
+
+    // Listen for when a user replies (for real-time navbar count update)
+    socket.on('message-replied', ({ sender, mentorId, studentId }) => {
+      // Recalculate unread count from pendingChats when someone replies
+      if (!pendingChats || !Array.isArray(pendingChats)) return;
+      
+      let totalUnread = 0;
+      pendingChats.forEach(chat => {
+        if (chat?.messages && Array.isArray(chat.messages)) {
+          chat.messages.forEach(msg => {
+            if (msg.sender !== userData?._id && !msg.isRead) {
+              totalUnread += 1;
+            }
+          });
+        }
+      });
+      setC(totalUnread);
+    });
+
     return()=>{
-    socket.off('send-message')}
-  },[userData?._id, pendingChats])
+      socket.off('send-message');
+      socket.off('messages-read');
+      socket.off('message-replied');
+    }
+  },[userData?._id, userData?.role, pendingChats])
   const studentNavItems = [
     { name: 'Mentors', path: '/user/mentors', icon: Users },
     { name: 'Ask Question', path: '/user/ask-question', icon: HelpCircle },
@@ -206,45 +233,93 @@ const NavBar = () => {
               {/* Mobile Quick Actions - Mentors: 2 separate icons, Students: dropdown */}
               {role === 'mentor' ? (
                 <div className="flex items-center gap-2 lg:hidden">
-                  {/* Requests Icon */}
-                  <button
-                    onClick={() => navigate('/mentor/requests')}
-                    className="relative flex items-center justify-center w-11 h-11 rounded-xl bg-slate-800/50 text-purple-300 hover:bg-slate-700/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20 hover:scale-110 border border-purple-500/20 group"
-                  >
-                    <FileText className="w-5 h-5 transition-transform duration-300 group-hover:scale-125 group-hover:-rotate-12" />
-                    {requestslength > 0 && (
-                      <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-linear-to-r from-pink-500 to-pink-600 rounded-full shadow-lg shadow-pink-500/50 animate-pulse transition-all duration-300">
-                        {requestslength}
-                      </span>
-                    )}
-                  </button>
+                  {(() => {
+                    const profileComplete = (userData?.profileCompletion ?? 0) >= 75;
+                    return (
+                      <>
+                        {/* Requests Icon */}
+                        <button
+                          onClick={() => {
+                            if (!profileComplete) {
+                              alert('Please complete your profile to access this.');
+                              navigate('/profilementor');
+                              return;
+                            }
+                            navigate('/mentor/requests');
+                          }}
+                          disabled={!profileComplete}
+                          className={`relative flex items-center justify-center w-11 h-11 rounded-xl text-purple-300 hover:shadow-lg hover:shadow-purple-500/20 hover:scale-110 border border-purple-500/20 group transition-all duration-300 ${
+                            profileComplete
+                              ? 'bg-slate-800/50 hover:bg-slate-700/50 cursor-pointer'
+                              : 'bg-slate-700/30 opacity-50 cursor-not-allowed'
+                          }`}
+                        >
+                          <FileText className={`w-5 h-5 transition-transform duration-300 ${profileComplete ? 'group-hover:scale-125 group-hover:-rotate-12' : ''}`} />
+                          {requestslength > 0 && (
+                            <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-linear-to-r from-pink-500 to-pink-600 rounded-full shadow-lg shadow-pink-500/50 animate-pulse transition-all duration-300">
+                              {requestslength}
+                            </span>
+                          )}
+                        </button>
 
-                  {/* Active Chats Icon */}
-                  <button
-                    onClick={() => navigate('/mentor/chats')}
-                    className="relative flex items-center justify-center w-11 h-11 rounded-xl bg-slate-800/50 text-purple-300 hover:bg-slate-700/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20 hover:scale-110 border border-purple-500/20 group"
-                  >
-                    <MessageSquare className="w-5 h-5 transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12" />
-                    {c > 0 && (
-                      <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-linear-to-r from-pink-500 to-pink-600 rounded-full shadow-lg shadow-pink-500/50 animate-pulse transition-all duration-300">
-                        {c}
-                      </span>
-                    )}
-                  </button>
+                        {/* Active Chats Icon */}
+                        <button
+                          onClick={() => {
+                            if (!profileComplete) {
+                              alert('Please complete your profile to access this.');
+                              navigate('/profilementor');
+                              return;
+                            }
+                            navigate('/mentor/chats');
+                          }}
+                          disabled={!profileComplete}
+                          className={`relative flex items-center justify-center w-11 h-11 rounded-xl text-purple-300 hover:shadow-lg hover:shadow-purple-500/20 hover:scale-110 border border-purple-500/20 group transition-all duration-300 ${
+                            profileComplete
+                              ? 'bg-slate-800/50 hover:bg-slate-700/50 cursor-pointer'
+                              : 'bg-slate-700/30 opacity-50 cursor-not-allowed'
+                          }`}
+                        >
+                          <MessageSquare className={`w-5 h-5 transition-transform duration-300 ${profileComplete ? 'group-hover:scale-125 group-hover:rotate-12' : ''}`} />
+                          {c > 0 && (
+                            <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-linear-to-r from-pink-500 to-pink-600 rounded-full shadow-lg shadow-pink-500/50 animate-pulse transition-all duration-300">
+                              {c}
+                            </span>
+                          )}
+                        </button>
+                      </>
+                    );
+                  })()}
                 </div>
               ) : (
                 <div className="relative lg:hidden" ref={mobileQuickRef}>
-                  <button
-                    onClick={() => navigate("/user/messages")}
-                    className="flex items-center justify-center w-11 h-11 rounded-xl bg-slate-800/50 text-purple-300 hover:bg-slate-700/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20 hover:scale-110 border border-purple-500/20 group"
-                  >
-                    <MessageSquare className="w-5 h-5 transition-transform duration-300 group-hover:scale-125" />
-                    {c > 0 && (
-                      <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-linear-to-r from-pink-500 to-pink-600 rounded-full shadow-lg shadow-pink-500/50 animate-pulse transition-all duration-300">
-                        {c}
-                      </span>
-                    )}
-                  </button>
+                  {(() => {
+                    const profileComplete = (userData?.profileCompletion ?? 0) >= 75;
+                    return (
+                      <button
+                        onClick={() => {
+                          if (!profileComplete) {
+                            alert('Please complete your profile to access this.');
+                            navigate('/profile');
+                            return;
+                          }
+                          navigate("/user/messages");
+                        }}
+                        disabled={!profileComplete}
+                        className={`flex items-center justify-center w-11 h-11 rounded-xl text-purple-300 border border-purple-500/20 group transition-all duration-300 ${
+                          profileComplete
+                            ? 'bg-slate-800/50 hover:bg-slate-700/50 hover:shadow-lg hover:shadow-purple-500/20 hover:scale-110 cursor-pointer'
+                            : 'bg-slate-700/30 opacity-50 cursor-not-allowed'
+                        }`}
+                      >
+                        <MessageSquare className={`w-5 h-5 transition-transform duration-300 ${profileComplete ? 'group-hover:scale-125' : ''}`} />
+                        {c > 0 && (
+                          <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-linear-to-r from-pink-500 to-pink-600 rounded-full shadow-lg shadow-pink-500/50 animate-pulse transition-all duration-300">
+                            {c}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })()}
                 </div>
               )}
 
@@ -314,8 +389,20 @@ const NavBar = () => {
 
               {/* Mobile Menu Button */}
               <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="lg:hidden flex items-center justify-center w-11 h-11 rounded-xl bg-linear-to-br from-purple-600 to-pink-600 text-white hover:shadow-lg hover:shadow-purple-500/50 transition-all duration-300 hover:scale-105"
+                onClick={() => {
+                  const profileComplete = (userData?.profileCompletion ?? 0) >= 75;
+                  if (!profileComplete) {
+                    alert('Please complete your profile to access navigation.');
+                    navigate(userData?.role === 'mentor' ? '/profilementor' : '/profile');
+                    return;
+                  }
+                  setIsMobileMenuOpen(!isMobileMenuOpen);
+                }}
+                className={`lg:hidden flex items-center justify-center w-11 h-11 rounded-xl text-white hover:shadow-lg hover:shadow-purple-500/50 transition-all duration-300 ${
+                  ((userData?.profileCompletion ?? 0) >= 75)
+                    ? 'bg-linear-to-br from-purple-600 to-pink-600 hover:scale-105 cursor-pointer'
+                    : 'bg-slate-700/50 opacity-50 cursor-not-allowed'
+                }`}
               >
                 {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>

@@ -14,10 +14,11 @@ import {
   Smile,
   ArrowLeft,
   X,
-  File as FileIcon
+  File as FileIcon,
+  MessageCircle
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { addMessage, setActiveChat } from '../Redux/chatSlice';
+import { addMessage, setActiveChat, markMessagesAsRead } from '../Redux/chatSlice';
 import { getSocket } from '../../socket';
 
 function MentorActiveChats() {
@@ -64,7 +65,7 @@ function MentorActiveChats() {
     fetchChats();
   }, []);
 
-  // Fetch messages for active chat - DO NOT mark as read
+  // Fetch messages for active chat and mark as read
   useEffect(() => {
     if (activeChat?._id) {
       const fetchMessages = async () => {
@@ -75,6 +76,20 @@ function MentorActiveChats() {
           );
           setCurrentMessages(res.data.messages || []);
 
+          // Update activeChat with questionTitle from response
+          if (res.data.questionTitle) {
+            dispatch(setActiveChat({ ...activeChat, questionTitle: res.data.questionTitle, questionId: res.data.questionId }));
+          }
+
+          // Mark messages as read for this chat
+          await axios.post(
+            `${serverUrl}/api/chats/mark-as-read/${activeChat._id}`,
+            {},
+            { withCredentials: true }
+          );
+
+          // Update Redux state to mark messages as read
+          dispatch(markMessagesAsRead(activeChat._id));
         } catch (err) {
           console.error('Error fetching messages:', err);
         }
@@ -82,7 +97,7 @@ function MentorActiveChats() {
 
       fetchMessages();
     }
-  }, [activeChat?._id]);
+  }, [activeChat?._id, dispatch]);
 
   // Auto-scroll to latest message
   useEffect(() => {
@@ -160,6 +175,14 @@ function MentorActiveChats() {
             : chat
         )
       );
+
+      // Emit socket event to update navbar unread counts in real-time
+      const socket = getSocket();
+      socket.emit('message-replied', { 
+        chatId: activeChat._id,
+        sender: 'mentor',
+        studentId: activeChat.student?._id 
+      });
     } catch (err) {
       console.error('Error sending message:', err);
       alert('Failed to send message. Please try again.');
@@ -219,6 +242,13 @@ function MentorActiveChats() {
   const handleBackToChats = () => {
     setIsMobileView(false);
   };
+
+  // Auto-show mobile chat view when activeChat is set on mobile (e.g., when coming from ViewQuestion)
+  useEffect(() => {
+    if (activeChat && window.innerWidth < 768) {
+      setIsMobileView(true);
+    }
+  }, [activeChat]);
 
   const formatTime = (date) => {
     return new Date(date).toLocaleTimeString('en-US', {
@@ -318,10 +348,16 @@ function MentorActiveChats() {
 
   // ...existing code...
   useEffect(() => {
-  if (window.innerWidth < 768) {
-    setIsMobileView(false); // always show chat list first
-  }
-}, [])
+    if (window.innerWidth < 768) {
+      // If activeChat is already set (e.g., coming from ViewQuestion), show mobile chat view
+      // Otherwise, show chat list first
+      if (activeChat) {
+        setIsMobileView(true);
+      } else {
+        setIsMobileView(false);
+      }
+    }
+  }, [activeChat])
 
 const handleCompleteChat = async () => {
   if (!activeChat?._id) return
@@ -475,7 +511,7 @@ const handleCompleteChat = async () => {
             )}
 
             {/* Right Side - Chat Window */}
-            {activeChat && !isMobileView ? (
+            {activeChat ? (
               <div className="hidden md:flex flex-1 flex-col">
                 {/* Chat Header */}
                 <div className="p-4 border-b border-slate-700/50 flex items-center justify-between bg-slate-800/50">
@@ -521,7 +557,7 @@ const handleCompleteChat = async () => {
                     <p className="text-sm font-semibold text-white truncate">{activeChat.questionTitle || 'Loading...'}</p>
                   </div>
                   <button
-                    onClick={() => navigate(`/question/${activeChat.question?._id}`)}
+                    onClick={() => navigate(`/question/${activeChat.questionId}`)}
                     className="ml-3 px-3 py-1.5 text-xs font-medium rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition-all whitespace-nowrap"
                   >
                     View
@@ -658,7 +694,7 @@ const handleCompleteChat = async () => {
                     <p className="text-sm font-semibold text-white truncate">{activeChat.questionTitle || 'Loading...'}</p>
                   </div>
                   <button
-                    onClick={() => navigate(`/question/${activeChat.question?._id}`)}
+                    onClick={() => navigate(`/question/${activeChat.questionId}`)}
                     className="ml-3 px-3 py-1.5 text-xs font-medium rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition-all whitespace-nowrap"
                   >
                     View

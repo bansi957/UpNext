@@ -119,34 +119,123 @@ const deleteQuestion = async (req, res) => {
 const getAllQuestions = async (req, res) => {
   try {
     const mentorId = req.userId;
+    const { filter } = req.query;
     
-    // Pending questions open to all mentors
-    const allquestions = await Question.find({
-      questionType: "all",
-      status: "pending"
-    })
-      .populate("author", "fullName email profileImage")
-      .sort({ createdAt: -1 });
-    
-    // Accepted questions by this mentor
-    const acceptedQuestions = await Question.find({
-      questionType: "all",
-      status: "accepted",
-      assignedTo: mentorId
-    })
-      .populate("author", "fullName email profileImage")
-      .sort({ createdAt: -1 });
-    
-    // Specific questions targeted to this mentor (both pending and accepted)
-    const specificQuestions = await Question.find({
-      targetMentor: mentorId,
-      questionType: "specific"
-    })
-      .populate("author", "fullName email profileImage")
-      .sort({ createdAt: -1 });
-    
-    const questions = [...allquestions, ...acceptedQuestions, ...specificQuestions];
+    console.log('getAllQuestions called with mentorId:', mentorId, 'filter:', filter);
+
+    let questions = [];
+
+    if (filter === "specific") {
+      // Only specific (For You) questions
+      questions = await Question.find({
+        targetMentor: mentorId,
+        questionType: "specific"
+      })
+        .populate("author", "fullName email profileImage")
+        .sort({ createdAt: -1 });
+      console.log('Specific questions found:', questions.length);
+    } else if (filter === "pending") {
+      // Only pending questions
+      const allPending = await Question.find({
+        questionType: "all",
+        status: "pending"
+      })
+        .populate("author", "fullName email profileImage")
+        .sort({ createdAt: -1 });
+
+      const specificPending = await Question.find({
+        targetMentor: mentorId,
+        questionType: "specific",
+        status: "pending"
+      })
+        .populate("author", "fullName email profileImage")
+        .sort({ createdAt: -1 });
+
+      console.log('Pending questions - all:', allPending.length, 'specific:', specificPending.length);
+      questions = [...allPending, ...specificPending];
+    } else if (filter === "accepted") {
+      // Only accepted questions
+      const allAccepted = await Question.find({
+        questionType: "all",
+        status: "accepted",
+        acceptedBy: mentorId
+      })
+        .populate("author", "fullName email profileImage")
+        .sort({ createdAt: -1 });
+
+      const specificAccepted = await Question.find({
+        targetMentor: mentorId,
+        questionType: "specific",
+        status: "accepted"
+      })
+        .populate("author", "fullName email profileImage")
+        .sort({ createdAt: -1 });
+
+      console.log('Accepted questions - all:', allAccepted.length, 'specific:', specificAccepted.length);
+      questions = [...allAccepted, ...specificAccepted];
+    } else if (filter === "completed") {
+      // Only completed questions
+      const allCompleted = await Question.find({
+        questionType: "all",
+        status: "completed",
+        acceptedBy: mentorId
+      })
+        .populate("author", "fullName email profileImage")
+        .sort({ createdAt: -1 });
+
+      const specificCompleted = await Question.find({
+        targetMentor: mentorId,
+        questionType: "specific",
+        status: "completed"
+      })
+        .populate("author", "fullName email profileImage")
+        .sort({ createdAt: -1 });
+
+      console.log('Completed questions - all:', allCompleted.length, 'specific:', specificCompleted.length);
+      questions = [...allCompleted, ...specificCompleted];
+    } else {
+      // No filter or filter === "all" - show everything
+      const allPending = await Question.find({
+        questionType: "all",
+        status: "pending"
+      })
+        .populate("author", "fullName email profileImage")
+        .sort({ createdAt: -1 });
+
+      const allAccepted = await Question.find({
+        questionType: "all",
+        status: "accepted",
+        acceptedBy: mentorId
+      })
+        .populate("author", "fullName email profileImage")
+        .sort({ createdAt: -1 });
+
+      const allCompleted = await Question.find({
+        questionType: "all",
+        status: "completed",
+        acceptedBy: mentorId
+      })
+        .populate("author", "fullName email profileImage")
+        .sort({ createdAt: -1 });
+
+      const specificQuestions = await Question.find({
+        targetMentor: mentorId,
+        questionType: "specific"
+      })
+        .populate("author", "fullName email profileImage")
+        .sort({ createdAt: -1 });
+
+      console.log('All filter - pending:', allPending.length, 'accepted:', allAccepted.length, 'completed:', allCompleted.length, 'specific:', specificQuestions.length);
+      questions = [
+        ...allPending,
+        ...allAccepted,
+        ...allCompleted,
+        ...specificQuestions
+      ];
+    }
+
     questions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    console.log('Total questions to return:', questions.length);
 
     if (questions.length === 0) {
       return res.status(200).json([]);
@@ -154,6 +243,7 @@ const getAllQuestions = async (req, res) => {
 
     return res.status(200).json(questions);
   } catch (error) {
+    console.error('Error in getAllQuestions:', error);
     return res.status(500).json({
       message: "Error fetching questions",
       error: error.message,

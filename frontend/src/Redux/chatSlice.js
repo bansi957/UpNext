@@ -35,6 +35,16 @@ const chatSlice = createSlice({
     },
     clearMessages(state) {
       state.messages = [];
+    },
+    markMessagesAsRead(state, action) {
+      // Mark all unread messages as read in the pendingChats for a specific chat
+      const chatId = action.payload;
+      const chat = state.pendingChats.find(c => c._id === chatId);
+      if (chat && chat.messages && Array.isArray(chat.messages)) {
+        chat.messages.forEach(msg => {
+          msg.isRead = true;
+        });
+      }
     }
   }
 });
@@ -48,7 +58,8 @@ export const {
   setError,
   clearMessages,
   setPendingChats,
-  setCompletedChats
+  setCompletedChats,
+  markMessagesAsRead
 } = chatSlice.actions;
 
 export default chatSlice.reducer;

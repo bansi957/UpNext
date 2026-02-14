@@ -15,7 +15,7 @@ import {
   File as FileIcon,
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { setActiveChat } from '../Redux/chatSlice';
+import { setActiveChat, markMessagesAsRead } from '../Redux/chatSlice';
 import { getSocket } from '../../socket';
 
 function UserMessages() {
@@ -155,7 +155,7 @@ function UserMessages() {
     };
   }, [userData?._id, activeChat?._id, serverUrl, allChats]);
 
-  // Fetch messages for active chat - DO NOT mark as read
+  // Fetch messages for active chat and mark as read
   useEffect(() => {
     if (activeChat?._id) {
       const fetchMessages = async () => {
@@ -166,6 +166,11 @@ function UserMessages() {
           );
           setCurrentMessages(res.data.messages || []);
 
+          // Update activeChat with questionTitle and questionId from response
+          if (res.data.questionTitle) {
+            dispatch(setActiveChat({ ...activeChat, questionTitle: res.data.questionTitle, questionId: res.data.questionId }));
+          }
+
           if (activeChat?.rating) {
             setRating(activeChat.rating);
             setHasRated(true);
@@ -173,6 +178,16 @@ function UserMessages() {
             setRating(0);
             setHasRated(false);
           }
+
+          // Mark messages as read for this chat
+          await axios.post(
+            `${serverUrl}/api/chats/mark-as-read/${activeChat._id}`,
+            {},
+            { withCredentials: true }
+          );
+
+          // Update Redux state to mark messages as read
+          dispatch(markMessagesAsRead(activeChat._id));
         } catch (err) {
           console.error('Error fetching messages:', err);
         }
@@ -180,7 +195,7 @@ function UserMessages() {
 
       fetchMessages();
     }
-  }, [activeChat?._id, serverUrl]);
+  }, [activeChat?._id, serverUrl, dispatch]);
 
   // Auto-scroll to latest message
   useEffect(() => {
@@ -256,6 +271,14 @@ function UserMessages() {
             : chat
         )
       );
+
+      // Emit socket event to update navbar unread counts in real-time
+      const socket = getSocket();
+      socket.emit('message-replied', { 
+        chatId: activeChat._id,
+        sender: 'student',
+        mentorId: activeChat.mentor?._id 
+      });
     } catch (err) {
       console.error('Error sending message:', err);
       alert('Failed to send message. Please try again.');
@@ -312,6 +335,13 @@ function UserMessages() {
   const handleBackToChats = () => {
     setIsMobileView(false);
   };
+
+  // Auto-show mobile chat view when activeChat is set on mobile (e.g., when coming from ViewQuestion)
+  useEffect(() => {
+    if (activeChat && window.innerWidth < 768) {
+      setIsMobileView(true);
+    }
+  }, [activeChat]);
 
   const handleRateMentor = async (stars) => {
     if (!activeChat?._id) return;
