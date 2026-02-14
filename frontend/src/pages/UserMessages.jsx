@@ -7,7 +7,6 @@ import ChatMessage from '../components/ChatMessage';
 import {
   Send,
   Search,
-  MoreVertical,
   Paperclip,
   ArrowLeft,
   MessageCircle,
@@ -367,7 +366,7 @@ function UserMessages() {
         <div className="max-w-7xl my-5 mx-auto">
                   <button
                     onClick={() => navigate(-1)}
-                    className="flex items-center gap-2 px-4 py-2 mb-6 rounded-xl bg-slate-800/50 text-slate-300 hover:text-white transition-all border border-slate-700 hover:border-purple-500/40"
+                    className={`flex items-center gap-2 px-4 py-2 mb-6 rounded-xl bg-slate-800/50 text-slate-300 hover:text-white transition-all border border-slate-700 hover:border-purple-500/40 ${isMobileView && activeChat ? 'hidden' : ''}`}
                   >
                     <ArrowLeft className="w-4 h-4" />
                     Back
@@ -542,11 +541,6 @@ function UserMessages() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <button className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400">
-                      <MoreVertical className="w-5 h-5" />
-                    </button>
-                  </div>
                 </div>
 
                 {/* Question Details */}
@@ -686,7 +680,7 @@ function UserMessages() {
                     )}
 
                     <div className="p-4 border-t border-slate-700/50 bg-slate-800/50 flex items-center gap-2">
-                      <label className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400 cursor-pointer transition" title="Attach file">
+                      <label className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400 cursor-pointer transition flex-shrink-0" title="Attach file">
                         <Paperclip className="w-5 h-5" />
                         <input
                           ref={fileInputRef}
@@ -704,12 +698,12 @@ function UserMessages() {
                         }
                         placeholder="Type a message..."
                         disabled={uploading}
-                        className="flex-1 px-4 py-2 rounded-xl bg-slate-700/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-50"
+                        className="flex-1 px-4 py-2 rounded-xl bg-slate-700/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-50 min-w-0"
                       />
                       <button
                         onClick={handleSendMessage}
                         disabled={uploading || (!messageInput.trim() && !selectedFile)}
-                        className="p-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="p-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                       >
                         {uploading ? (
                           <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -728,9 +722,10 @@ function UserMessages() {
               </div>
             )}
 
-            {/* Mobile Chat View */}
-            {isMobileView && activeChat && (
-              <div className="w-full flex md:hidden flex-col">
+            {/* Mobile View - Chat List or Chat */}
+            {isMobileView ? (
+              activeChat ? (
+              <div className="w-full flex flex-col">
                 <div className="p-4 border-b border-slate-700/50 flex items-center justify-between bg-slate-800/50">
                   <button onClick={handleBackToChats} className="p-2">
                     <ArrowLeft className="w-5 h-5 text-white" />
@@ -742,43 +737,10 @@ function UserMessages() {
                     <p className="text-xs text-slate-400">
                       {activeChat.status === 'completed'
                         ? 'Chat completed'
-                        : 'Active'}
+                        : activeChat.mentorIsOnline
+                        ? 'Active now'
+                        : 'Offline'}
                     </p>
-                  </div>
-                  <button className="p-2">
-                    <MoreVertical className="w-5 h-5 text-slate-400" />
-                  </button>
-                </div>
-
-                {/* Chat Header */}
-                <div className="p-4 border-b border-slate-700/50 flex items-center justify-between bg-slate-800/50">
-                  <div className="flex items-center gap-3">
-                    <div className="relative w-10 h-10">
-                      <div className="w-10 h-10 rounded-full bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
-                        {activeChat.mentorName?.charAt(0).toUpperCase()}
-                      </div>
-                      {activeChat.mentorIsOnline &&
-                        activeChat.status !== 'completed' && (
-                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-slate-800"></div>
-                        )}
-                    </div>
-                    <div>
-                      <p className="font-semibold text-white">
-                        {activeChat.mentorName}
-                      </p>
-                      <p className="text-xs text-slate-400">
-                        {activeChat.status === 'completed'
-                          ? 'Chat completed'
-                          : activeChat.mentorIsOnline
-                          ? 'Active now'
-                          : 'Offline'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <button className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400">
-                      <MoreVertical className="w-5 h-5" />
-                    </button>
                   </div>
                 </div>
 
@@ -917,8 +879,8 @@ function UserMessages() {
                       </div>
                     )}
 
-                    <div className="border-t border-slate-700/50 bg-slate-800/50 p-4 flex items-center gap-2">
-                      <label className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400 cursor-pointer transition">
+                    <div className="border-t border-slate-700/50 bg-slate-800/50 p-4 flex items-center gap-2 w-full">
+                      <label className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400 cursor-pointer transition flex-shrink-0">
                         <Paperclip className="w-5 h-5" />
                         <input
                           ref={fileInputRef}
@@ -936,12 +898,12 @@ function UserMessages() {
                         }
                         placeholder="Type a message..."
                         disabled={uploading}
-                        className="flex-1 px-4 py-2 rounded-xl bg-slate-700/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-50"
+                        className="flex-1 px-4 py-2 rounded-xl bg-slate-700/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-50 min-w-0"
                       />
                       <button
                         onClick={handleSendMessage}
                         disabled={uploading || (!messageInput.trim() && !selectedFile)}
-                        className="p-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="p-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                       >
                         {uploading ? (
                           <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -953,7 +915,145 @@ function UserMessages() {
                   </>
                 )}
               </div>
-            )}
+            ) : (
+              /* Mobile Chat List */
+              <div className="w-full flex flex-col">
+                <div className="p-4 border-b border-slate-700/50">
+                  <h2 className="text-2xl font-bold text-white mb-4">Messages</h2>
+                  <div className="relative mb-4">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                    <input
+                      type="text"
+                      placeholder="Search mentors..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-700/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                    />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setChatTab('active')}
+                      className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                        chatTab === 'active'
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700'
+                      }`}
+                    >
+                      Active ({activeChatCount})
+                    </button>
+                    <button
+                      onClick={() => setChatTab('completed')}
+                      className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                        chatTab === 'completed'
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700'
+                      }`}
+                    >
+                      Completed ({completedChatCount})
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto">
+                  {loading ? (
+                    <div className="p-4 text-center text-slate-400">
+                      Loading chats...
+                    </div>
+                  ) : !filteredChats || filteredChats.length === 0 ? (
+                    <div className="p-4 text-center text-slate-400">
+                      <MessageCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      {chatTab === 'active' ? 'No active chats' : 'No completed chats'}
+                    </div>
+                  ) : (
+                    filteredChats.map((chat) =>
+                      chat && chat._id ? (
+                        <button
+                          key={chat._id}
+                          onClick={() => handleSelectChat(chat)}
+                          className={`w-full p-4 border-b border-slate-700/30 text-left transition-all ${
+                            activeChat?._id === chat._id
+                              ? 'bg-purple-600/20 border-l-4 border-l-purple-600'
+                              : 'hover:bg-slate-700/20'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="relative w-12 h-12">
+                              <div
+                                className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0 ${
+                                  chat?.status === 'completed' && chat?.rating
+                                    ? 'bg-emerald-600/60'
+                                    : chat?.status === 'completed' &&
+                                      !chat?.rating
+                                    ? 'bg-orange-600/60'
+                                    : 'bg-linear-to-br from-purple-500 to-pink-500'
+                                }`}
+                              >
+                                {chat?.status === 'completed' && chat?.rating
+                                  ? '✓'
+                                  : chat?.status === 'completed' &&
+                                    !chat?.rating
+                                  ? '⭐'
+                                  : chat?.mentorName?.charAt(0).toUpperCase()}
+                              </div>
+                              {chat?.mentorIsOnline &&
+                                chat?.status !== 'completed' && (
+                                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-slate-800"></div>
+                                )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-white text-sm">
+                                {chat?.mentorName || 'Unknown'}
+                              </p>
+                              <p
+                                className={`text-xs truncate ${
+                                  chat?.status === 'completed' && chat?.rating
+                                    ? 'text-emerald-400'
+                                    : chat?.status === 'completed' &&
+                                      !chat?.rating
+                                    ? 'text-orange-400'
+                                    : 'text-slate-400'
+                                }`}
+                              >
+                                {chat?.status === 'completed' &&
+                                !chat?.rating
+                                  ? 'Please rate this mentor'
+                                  : chat?.lastMessage || 'No messages yet'}
+                              </p>
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                              {chat?.unreadCount > 0 && chat?.status !== 'completed' && (
+                                <span className="px-2 py-1 text-xs font-bold text-white bg-red-500 rounded-full">
+                                  {chat.unreadCount}
+                                </span>
+                              )}
+                              {chat?.status === 'completed' &&
+                                chat?.rating && (
+                                  <span className="text-xs font-semibold text-emerald-400">
+                                    Done
+                                  </span>
+                                )}
+                              {chat?.status === 'completed' &&
+                                !chat?.rating && (
+                                  <span className="text-xs font-semibold text-orange-400">
+                                    Rate
+                                  </span>
+                                )}
+                              {chat?.rating && (
+                                <span className="text-xs text-yellow-400 font-semibold">
+                                  {chat.rating}★
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </button>
+                      ) : null
+                    )
+                  )}
+                </div>
+              </div>
+            )
+            ) : null}
           </div>
         </div>
       </div>
