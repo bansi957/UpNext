@@ -26,8 +26,8 @@ const signUp=async (req,res)=>{
         })
         const token=await jwtToken.sign({userId: user._id.toString()},process.env.JWT_SECRET,{ expiresIn: "7d" })
         res.cookie("token",token,{
-            secure:false,
-            sameSite:"lax",
+            secure:true,
+            sameSite:"none",
             maxAge:7*24*60*60*1000,
             httpOnly:true
         })
@@ -54,8 +54,8 @@ const signIn=async (req,res)=>{
 
         const token=await jwtToken.sign({userId: user._id.toString()},process.env.JWT_SECRET,{ expiresIn: "7d" })
         res.cookie("token",token,{
-            secure:false,
-            sameSite:"lax",
+            secure:true,
+            sameSite:"none",
             maxAge:7*24*60*60*1000,
             httpOnly:true
         })
@@ -73,7 +73,7 @@ const signOut=async (req,res)=>{
     try {
        res.clearCookie("token", {
   httpOnly: true,
-  sameSite: "lax",
+  sameSite: "none",
 });
       return res.status(200).json({
             message:"successfully logout"
@@ -92,8 +92,8 @@ const googleauth=async(req,res)=>{
         if(user){
               const token=await jwtToken.sign({userId: user._id.toString()},process.env.JWT_SECRET,{ expiresIn: "7d" })
             res.cookie("token",token,{
-            secure:false,
-            sameSite:"lax",
+            secure:true,
+            sameSite:"none",
             maxAge:7*24*60*60*1000,
             httpOnly:true
         })
@@ -102,8 +102,8 @@ const googleauth=async(req,res)=>{
         user=await User.create({fullName,email,role})
         const token=await jwtToken.sign({userId: user._id.toString()},process.env.JWT_SECRET,{ expiresIn: "7d" })
         res.cookie("token",token,{
-            secure:false,
-            sameSite:"lax",
+            secure:true,
+            sameSite:"none",
             maxAge:7*24*60*60*1000,
             httpOnly:true
         })
