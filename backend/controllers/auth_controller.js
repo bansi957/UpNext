@@ -72,8 +72,10 @@ const signIn=async (req,res)=>{
 const signOut=async (req,res)=>{
     try {
        res.clearCookie("token", {
-  httpOnly: true,
-  sameSite: "none",
+      httpOnly: true,
+      secure: true,        // ✅ MUST MATCH
+      sameSite: "none",    // ✅ MUST MATCH
+      path: "/",
 });
       return res.status(200).json({
             message:"successfully logout"
