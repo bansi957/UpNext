@@ -724,8 +724,8 @@ const handleCompleteChat = async () => {
                     )}
 
                     {/* Mobile Input */}
-                    <div className="border-t border-slate-700/50 bg-slate-800/50 p-4 flex items-center gap-2 w-full">
-                      <label className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400 cursor-pointer transition flex-shrink-0" title="Attach file">
+                    <div className="border-t border-slate-700/50 bg-slate-800/50 p-4 flex items-center gap-1 flex-nowrap">
+                      <label className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400 cursor-pointer transition flex-shrink-0 flex-grow-0" title="Attach file">
                         <Paperclip className="w-5 h-5" />
                         <input
                           ref={fileInputRef}
@@ -746,7 +746,7 @@ const handleCompleteChat = async () => {
                       <button
                         onClick={handleSendMessage}
                         disabled={uploading || (!messageInput.trim() && !selectedFile)}
-                        className="p-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                        className="p-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 flex-grow-0"
                       >
                         {uploading ? (
                           <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
