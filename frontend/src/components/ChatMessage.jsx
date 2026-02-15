@@ -74,9 +74,9 @@ function ChatMessage({ message, chatId }) {
     switch(message?.messageType) {
       case 'image':
         return (
-          <div className="space-y-1 w-full">
+          <div className="space-y-1 w-full min-w-0">
             {message.content && message.content !== message.fileName && (
-              <p className="text-sm break-words whitespace-normal word-break">{message.content}</p>
+              <p className="text-sm break-all">{message.content}</p>
             )}
             <div className="relative w-40 sm:w-48 md:w-56 overflow-hidden rounded-lg">
               <img 
@@ -96,11 +96,11 @@ function ChatMessage({ message, chatId }) {
         );
       case 'file':
         return (
-          <div className="space-y-1 w-full">
+          <div className="space-y-1 w-full min-w-0">
             {message.content && message.content !== message.fileName && (
-              <p className="text-sm break-words whitespace-normal">{message.content}</p>
+              <p className="text-sm break-all">{message.content}</p>
             )}
-            <div className="flex items-center gap-2 p-2 bg-slate-700/30 rounded-lg border border-slate-600/50 cursor-pointer hover:bg-slate-700/50 transition"
+            <div className="flex items-center gap-2 p-2 bg-slate-700/30 rounded-lg border border-slate-600/50 cursor-pointer hover:bg-slate-700/50 transition min-w-0"
               onClick={() => handleFileDownload()}
             >
               <FileIcon className="w-4 h-4 text-blue-400 shrink-0" />
@@ -121,15 +121,15 @@ function ChatMessage({ message, chatId }) {
           </div>
         );
       default:
-        return <p className="text-sm break-words whitespace-normal">{message?.content}</p>;
+        return <p className="text-sm break-all">{message?.content}</p>;
     }
   };
 
   return (
     <div className={`flex w-full ${isSender==userData.role ? 'justify-end' : 'justify-start'}`}>
-      <div className={`flex flex-col ${isSender==userData.role ? 'items-end' : 'items-start'} max-w-[85vw] sm:max-w-xs md:max-w-sm lg:max-w-md min-w-0 px-1`}>
+      <div className={`flex flex-col ${isSender==userData.role ? 'items-end' : 'items-start'} max-w-[85vw] sm:max-w-xs md:max-w-sm lg:max-w-md min-w-0`}>
         <div
-          className={`px-3 py-2 rounded-2xl break-words overflow-hidden min-w-0 ${
+          className={`px-3 py-2 rounded-2xl overflow-hidden min-w-0 w-full ${
             isSender
               ? 'bg-purple-600 text-white rounded-br-none'
               : 'bg-slate-700/70 text-slate-100 rounded-bl-none'

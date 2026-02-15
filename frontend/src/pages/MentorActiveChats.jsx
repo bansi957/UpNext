@@ -636,13 +636,13 @@ const handleCompleteChat = async () => {
                       <textarea
                         value={messageInput}
                         onChange={(e) => setMessageInput(e.target.value)}
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter' && (e.shiftKey || e.ctrlKey) && !uploading) {
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !uploading) {
                             e.preventDefault();
                             handleSendMessage();
                           }
                         }}
-                        placeholder="Type a message... (Shift+Enter to send)"
+                        placeholder="Type a message... (Shift+Enter for new line)"
                         disabled={uploading}
                         className="flex-1 px-4 py-2 rounded-xl bg-slate-700/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-50 min-w-0 resize-none max-h-32 overflow-y-auto"
                         rows="1"
@@ -778,13 +778,13 @@ const handleCompleteChat = async () => {
                       <textarea
                         value={messageInput}
                         onChange={(e) => setMessageInput(e.target.value)}
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter' && (e.shiftKey || e.ctrlKey) && !uploading) {
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !uploading) {
                             e.preventDefault();
                             handleSendMessage();
                           }
                         }}
-                        placeholder="Type a message... (Shift+Enter to send)"
+                        placeholder="Type a message... (Shift+Enter for new line)"
                         disabled={uploading}
                         className="flex-1 px-4 py-2 rounded-xl bg-slate-700/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-50 min-w-0 resize-none max-h-32 overflow-y-auto"
                         rows="1"
