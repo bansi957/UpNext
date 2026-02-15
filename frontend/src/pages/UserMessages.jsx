@@ -709,7 +709,7 @@ function UserMessages() {
                       </div>
                     )}
 
-                    <div className="p-4 border-t border-slate-700/50 bg-slate-800/50 flex items-center gap-2">
+                    <div className="p-4 border-t border-slate-700/50 bg-slate-800/50 flex items-end gap-2">
                       <label className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400 cursor-pointer transition flex-shrink-0" title="Attach file">
                         <Paperclip className="w-5 h-5" />
                         <input
@@ -719,16 +719,19 @@ function UserMessages() {
                           className="hidden"
                         />
                       </label>
-                      <input
-                        type="text"
+                      <textarea
                         value={messageInput}
                         onChange={(e) => setMessageInput(e.target.value)}
-                        onKeyPress={(e) =>
-                          e.key === 'Enter' && !uploading && handleSendMessage()
-                        }
-                        placeholder="Type a message..."
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter' && (e.shiftKey || e.ctrlKey) && !uploading) {
+                            e.preventDefault();
+                            handleSendMessage();
+                          }
+                        }}
+                        placeholder="Type a message... (Shift+Enter to send)"
                         disabled={uploading}
-                        className="flex-1 px-4 py-2 rounded-xl bg-slate-700/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-50 min-w-0"
+                        className="flex-1 px-4 py-2 rounded-xl bg-slate-700/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-50 min-w-0 resize-none max-h-32 overflow-y-auto"
+                        rows="1"
                       />
                       <button
                         onClick={handleSendMessage}

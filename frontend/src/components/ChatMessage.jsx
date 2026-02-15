@@ -74,15 +74,15 @@ function ChatMessage({ message, chatId }) {
     switch(message?.messageType) {
       case 'image':
         return (
-          <div className="space-y-1">
+          <div className="space-y-1 w-full">
             {message.content && message.content !== message.fileName && (
-              <p className="text-sm break-words">{message.content}</p>
+              <p className="text-sm break-words whitespace-normal word-break">{message.content}</p>
             )}
-            <div className="relative">
+            <div className="relative w-40 sm:w-48 md:w-56 overflow-hidden rounded-lg">
               <img 
                 src={message.fileUrl} 
                 alt={message.fileName}
-                className="max-w-xs rounded-lg cursor-pointer hover:opacity-90 transition"
+                className="w-full h-auto cursor-pointer hover:opacity-90 transition object-cover"
                 onClick={() => window.open(message.fileUrl, '_blank')}
               />
               <button
@@ -96,11 +96,11 @@ function ChatMessage({ message, chatId }) {
         );
       case 'file':
         return (
-          <div className="space-y-1">
+          <div className="space-y-1 w-full">
             {message.content && message.content !== message.fileName && (
-              <p className="text-sm break-words">{message.content}</p>
+              <p className="text-sm break-words whitespace-normal">{message.content}</p>
             )}
-            <div className="flex items-center gap-2 p-2 bg-slate-700/30 rounded-lg border border-slate-600/50 max-w-xs cursor-pointer hover:bg-slate-700/50 transition"
+            <div className="flex items-center gap-2 p-2 bg-slate-700/30 rounded-lg border border-slate-600/50 cursor-pointer hover:bg-slate-700/50 transition"
               onClick={() => handleFileDownload()}
             >
               <FileIcon className="w-4 h-4 text-blue-400 shrink-0" />
@@ -113,7 +113,7 @@ function ChatMessage({ message, chatId }) {
                   e.stopPropagation();
                   handleFileDownload();
                 }}
-                className="p-1 hover:bg-slate-600/50 rounded transition"
+                className="p-1 hover:bg-slate-600/50 rounded transition shrink-0"
               >
                 <Download className="w-3 h-3" />
               </button>
@@ -121,15 +121,15 @@ function ChatMessage({ message, chatId }) {
           </div>
         );
       default:
-        return <p className="text-sm break-words">{message?.content}</p>;
+        return <p className="text-sm break-words whitespace-normal">{message?.content}</p>;
     }
   };
 
   return (
-    <div className={`flex ${isSender==userData.role ? 'justify-end' : 'justify-start'}`}>
-      <div className={`max-w-xs ${isSender==userData.role ? 'lg:max-w-md' : 'lg:max-w-md'}`}>
+    <div className={`flex w-full ${isSender==userData.role ? 'justify-end' : 'justify-start'}`}>
+      <div className={`flex flex-col ${isSender==userData.role ? 'items-end' : 'items-start'} max-w-[85vw] sm:max-w-xs md:max-w-sm lg:max-w-md min-w-0 px-1`}>
         <div
-          className={`px-4 py-2 rounded-2xl ${
+          className={`px-3 py-2 rounded-2xl break-words overflow-hidden min-w-0 ${
             isSender
               ? 'bg-purple-600 text-white rounded-br-none'
               : 'bg-slate-700/70 text-slate-100 rounded-bl-none'
@@ -137,7 +137,7 @@ function ChatMessage({ message, chatId }) {
         >
           {renderMessageContent()}
         </div>
-        <div className={`flex items-center gap-1 mt-1 ${isSender==userData.role ? 'justify-end' : 'justify-start'} text-xs text-slate-400`}>
+        <div className={`flex items-center gap-1 mt-1 ${isSender==userData.role ? 'justify-end' : 'justify-start'} text-xs text-slate-400 px-1`}>
           <span>{formatTime(message?.createdAt)}</span>
           {isSender==userData.role && (
             message?.isRead ? <CheckCheck className="w-3 h-3 text-blue-400" /> : <Check className="w-3 h-3" />

@@ -15,6 +15,8 @@ const SignIn = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const dispatch = useDispatch();
 
   const handleSubmit = async (e) => {
@@ -24,6 +26,7 @@ const SignIn = () => {
       return;
     }
 
+    setLoading(true);
     try {
       const result = await axios.post(
         `${serverUrl}/api/auth/signin`,
@@ -35,14 +38,17 @@ const SignIn = () => {
       dispatch(addUserData(result.data.user));
     } catch (err) {
       setError(err.response?.data.message || err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleGoogleAuth = async () => {
-    const provider = new GoogleAuthProvider();
-    const result1 = await signInWithPopup(auth, provider);
-
+    setGoogleLoading(true);
     try {
+      const provider = new GoogleAuthProvider();
+      const result1 = await signInWithPopup(auth, provider);
+
       const result = await axios.post(
         `${serverUrl}/api/auth/googleauth`,
         { email: result1.user.email },
@@ -53,6 +59,8 @@ const SignIn = () => {
       dispatch(addUserData(result.data.user));
     } catch (err) {
       setError(err.response?.data.message || err.message);
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -161,7 +169,8 @@ const SignIn = () => {
                 name="email"
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
-                className="w-full px-3 py-2 rounded-lg border-2 border-slate-700 bg-slate-800/50 backdrop-blur-xl focus:border-purple-500 focus:outline-none transition-all duration-200 text-white placeholder:text-slate-500 text-sm"
+                disabled={loading || googleLoading}
+                className="w-full px-3 py-2 rounded-lg border-2 border-slate-700 bg-slate-800/50 backdrop-blur-xl focus:border-purple-500 focus:outline-none transition-all duration-200 text-white placeholder:text-slate-500 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 required
               />
             </div>
@@ -177,7 +186,8 @@ const SignIn = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
-                  className="w-full px-3 py-2 pr-10 rounded-lg border-2 border-slate-700 bg-slate-800/50 backdrop-blur-xl focus:border-purple-500 focus:outline-none transition-all duration-200 text-white placeholder:text-slate-500 text-sm"
+                  disabled={loading || googleLoading}
+                  className="w-full px-3 py-2 pr-10 rounded-lg border-2 border-slate-700 bg-slate-800/50 backdrop-blur-xl focus:border-purple-500 focus:outline-none transition-all duration-200 text-white placeholder:text-slate-500 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   required
                 />
                 <button
@@ -203,10 +213,17 @@ const SignIn = () => {
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full py-2 rounded-lg font-bold text-sm text-white bg-linear-to-r from-purple-600 to-pink-600 hover:shadow-2xl hover:shadow-purple-500/50 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center justify-center space-x-2 group mt-2"
+              disabled={loading || googleLoading}
+              className="w-full py-2 rounded-lg font-bold text-sm text-white bg-linear-to-r from-purple-600 to-pink-600 hover:shadow-2xl hover:shadow-purple-500/50 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center justify-center space-x-2 group mt-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
-              <span>Sign In</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  <span>Sign In</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
             </button>
           </form>
 
@@ -220,14 +237,21 @@ const SignIn = () => {
           {/* Google Auth Button */}
           <button
             onClick={handleGoogleAuth}
-            className="w-full flex items-center justify-center space-x-2 py-2 px-3 border-2 border-slate-700 bg-slate-800/50 backdrop-blur-xl rounded-lg font-semibold text-xs text-slate-200 hover:bg-slate-700/50 hover:border-slate-600 transition-all duration-200 group"
+            disabled={loading || googleLoading}
+            className="w-full flex items-center justify-center space-x-2 py-2 px-3 border-2 border-slate-700 bg-slate-800/50 backdrop-blur-xl rounded-lg font-semibold text-xs text-slate-200 hover:bg-slate-700/50 hover:border-slate-600 transition-all duration-200 group disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-slate-800/50"
           >
-           <img
-               src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                alt="google"
-              className="w-4 h-4 group-hover:scale-110 transition-transform"
-            />
-            <span>Sign in</span>
+            {googleLoading ? (
+              <div className="w-4 h-4 border-2 border-slate-200 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <>
+                <img
+                  src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                  alt="google"
+                  className="w-4 h-4 group-hover:scale-110 transition-transform"
+                />
+                <span>Sign in</span>
+              </>
+            )}
           </button>
 
           {/* Sign Up Link */}
