@@ -97,7 +97,7 @@ const userSchema=mongoose.Schema({
     },
     company:String,
     position:String,
-    yearsOfExperience:Number,
+    yearsOfExperience:String,
     teaching_style:String,
     achievements:String,
     mentorshipFocus:[String],
