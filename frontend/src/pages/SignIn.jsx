@@ -9,6 +9,7 @@ import { auth } from "../../firebase";
 import { useDispatch } from "react-redux";
 import { addUserData } from "../Redux/UserSlice";
 import { Sparkles, GraduationCap, Users, MessageCircle, ArrowRight, Zap } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -18,6 +19,7 @@ const SignIn = () => {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -58,7 +60,19 @@ const SignIn = () => {
       console.log(result);
       dispatch(addUserData(result.data.user));
     } catch (err) {
-      setError(err.response?.data.message || err.message);
+      if (err.response?.status === 404 && err.response?.data?.isNewUser) {
+        // Account not found, redirect to signup
+        setError("");
+        navigate("/signup", {
+          state: {
+            googleEmail: err.response.data.email,
+            googleFullName: err.response.data.fullName,
+            preFilledEmail: true,
+          },
+        });
+      } else {
+        setError(err.response?.data.message || err.message);
+      }
     } finally {
       setGoogleLoading(false);
     }

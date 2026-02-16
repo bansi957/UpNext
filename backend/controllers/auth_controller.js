@@ -99,8 +99,24 @@ const googleauth=async(req,res)=>{
             maxAge:7*24*60*60*1000,
             httpOnly:true
         })
-        return res.status(200).json({message:"successfully login",user})
+        return res.status(200).json({message:"successfully login",user,isNewUser:false})
         }
+        return res.status(404).json({message:"Account not found. Please sign up first",isNewUser:true,email,fullName})
+    } catch (error) {
+        res.status(500).json({
+            message:`googleauth error ${error}`
+        })
+    }
+}
+
+const googleSignup=async(req,res)=>{
+    try {
+        const {fullName,email,role}=req.body
+        let user=await User.findOne({email})
+        if(user){
+           return res.status(400).json({message:"user already exists please login"})
+        }
+        
         user=await User.create({fullName,email,role})
         const token=await jwtToken.sign({userId: user._id.toString()},process.env.JWT_SECRET,{ expiresIn: "7d" })
         res.cookie("token",token,{
@@ -112,7 +128,7 @@ const googleauth=async(req,res)=>{
         return res.status(200).json({message:"successfully signUp",user})
     } catch (error) {
         res.status(500).json({
-            message:`googleauth error ${error}`
+            message:`googleSignup error ${error}`
         })
     }
 }
@@ -228,4 +244,4 @@ const getMentors=async (req,res)=>{
   }
 }
 
-module.exports={signUp,signOut,signIn,googleauth,getCurrentUser,updateStudentDetails,getMentors}
+module.exports={signUp,signOut,signIn,googleauth,googleSignup,getCurrentUser,updateStudentDetails,getMentors}

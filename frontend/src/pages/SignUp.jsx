@@ -8,13 +8,15 @@ import { auth } from "../../firebase";
 import { useDispatch } from "react-redux";
 import { addUserData } from "../Redux/UserSlice";
 import { Sparkles, GraduationCap, Users, MessageCircle, ArrowRight, UserCircle, Award } from "lucide-react";
+import { useLocation } from "react-router-dom";
 
 const SignUp = () => {
+  const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState("student");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(location.state?.googleEmail || "");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
+  const [fullName, setFullName] = useState(location.state?.googleFullName || "");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -46,7 +48,7 @@ const SignUp = () => {
       const result1 = await signInWithPopup(auth, provider);
 
       const result = await axios.post(
-        `${serverUrl}/api/auth/googleauth`,
+        `${serverUrl}/api/auth/googlesignup`,
         { fullName: result1.user.displayName, email: result1.user.email, role },
         { withCredentials: true }
       );
