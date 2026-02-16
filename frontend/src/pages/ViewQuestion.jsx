@@ -313,14 +313,14 @@ function ViewQuestion() {
                   </div>
 
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                    {userData?.role === 'mentor' ? (
+                    {userData?.role === 'mentor' && question.status === 'pending' ? (
                       <button
                         onClick={() => handleAcceptRequest(question._id)}
-                        disabled={acceptingRequest || question.status === 'accepted'}
+                        disabled={acceptingRequest}
                         className="flex items-center justify-center sm:justify-start gap-2 px-4 py-2 rounded-xl bg-linear-to-r from-green-600 to-emerald-600 text-white font-medium text-sm shadow-2xl shadow-green-500/50 hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <CheckCircle className="w-4 h-4 shrink-0" />
-                        <span>{acceptingRequest ? 'Accepting...' : question.status === 'accepted' ? 'Already Accepted' : 'Accept Request'}</span>
+                        <span>{acceptingRequest ? 'Accepting...' : 'Accept Request'}</span>
                       </button>
                     ) : (
                       userData && userData._id === question.author?._id && (

@@ -254,21 +254,21 @@ function MyRequests() {
                       <span>View</span>
                     </button>
 
-                    {req.status === "accepted" ? (
-                      <button
-                        onClick={()=>handleChat(req._id)}
-                        className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-medium text-sm bg-linear-to-r from-blue-600 to-cyan-600 text-white hover:shadow-lg transition-all"
-                      >
-                        <MessageCircle className="w-4 h-4 shrink-0" />
-                        <span>Chat</span>
-                      </button>
-                    ) : (
+                    {req.status === "pending" ? (
                       <button
                         onClick={() => handleAccept(req._id)}
                         className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-medium text-sm bg-linear-to-r from-purple-600 to-pink-600 text-white hover:shadow-lg"
                       >
                         <CheckCircle className="w-4 h-4 shrink-0" />
                         <span>Accept</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={()=>handleChat(req._id)}
+                        className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-medium text-sm bg-linear-to-r from-blue-600 to-cyan-600 text-white hover:shadow-lg transition-all"
+                      >
+                        <MessageCircle className="w-4 h-4 shrink-0" />
+                        <span>Chat</span>
                       </button>
                     )}
                   </div>
